@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, AlertTriangle, ShoppingCart, Package, X } from 'lucide-react'
-import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { Bell, AlertTriangle, ShoppingCart, X } from 'lucide-react'
+import { formatDateTime } from '@/lib/utils'
 
 interface Notification {
   id: string
@@ -18,9 +18,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    loadNotifications()
-  }, [])
+  useEffect(() => { loadNotifications() }, [])
 
   async function loadNotifications() {
     setLoading(true)
@@ -28,9 +26,7 @@ export default function NotificationBell() {
       const res = await fetch('/api/notifications')
       const data = await res.json()
       setNotifications(data.data ?? [])
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   function markAllRead() {
@@ -61,8 +57,17 @@ export default function NotificationBell() {
 
       {open && (
         <>
+          {/* Backdrop */}
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-12 z-40 w-80 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+
+          {/* Mobile: fixed centered panel; Desktop: absolute dropdown */}
+          <div className={[
+            'z-40 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden',
+            // Mobile: fixed, centered horizontally, below the header
+            'fixed left-4 right-4 top-20',
+            // Desktop: absolute, anchored to bell
+            'sm:fixed sm:left-auto sm:right-4 sm:top-auto sm:absolute sm:right-0 sm:top-12 sm:w-80',
+          ].join(' ')}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
               <h3 className="text-sm font-semibold text-white">Notificações</h3>
               <div className="flex items-center gap-2">
@@ -77,7 +82,7 @@ export default function NotificationBell() {
               </div>
             </div>
 
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto">
               {loading ? (
                 <div className="py-8 text-center text-gray-500 text-sm">Carregando...</div>
               ) : notifications.length === 0 ? (
@@ -87,12 +92,7 @@ export default function NotificationBell() {
                 </div>
               ) : (
                 notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`flex gap-3 px-4 py-3 border-b border-gray-800/50 last:border-0 transition-colors ${
-                      !n.read ? 'bg-amber-500/5' : ''
-                    }`}
-                  >
+                  <div key={n.id} className={`flex gap-3 px-4 py-3 border-b border-gray-800/50 last:border-0 ${!n.read ? 'bg-amber-500/5' : ''}`}>
                     <div className="mt-0.5 shrink-0">{icons[n.type]}</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white">{n.title}</p>

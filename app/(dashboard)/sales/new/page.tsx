@@ -22,7 +22,7 @@ export default function NewSalePage() {
           </Link>
         }
       />
-      <div className="px-8 py-6 max-w-3xl animate-fade-in">
+      <div className="px-4 lg:px-8 py-6 max-w-3xl animate-fade-in">
         <SaleForm />
       </div>
     </div>

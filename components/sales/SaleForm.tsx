@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Plus, Trash2, Package } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Trash2, Package, Search } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
@@ -11,12 +11,12 @@ import { formatCurrency } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
 const PAYMENT_OPTIONS = [
-  { value: 'CASH', label: '💵 Dinheiro' },
-  { value: 'PIX', label: '📱 PIX' },
-  { value: 'CREDIT_CARD', label: '💳 Cartão de Crédito' },
-  { value: 'DEBIT_CARD', label: '💳 Cartão de Débito' },
-  { value: 'BANK_TRANSFER', label: '🏦 Transferência' },
-  { value: 'OTHER', label: '🔹 Outro' },
+  { value: 'CASH', label: 'Dinheiro' },
+  { value: 'PIX', label: 'PIX' },
+  { value: 'CREDIT_CARD', label: 'Cartão de Crédito' },
+  { value: 'DEBIT_CARD', label: 'Cartão de Débito' },
+  { value: 'BANK_TRANSFER', label: 'Transferência' },
+  { value: 'OTHER', label: 'Outro' },
 ]
 
 function centsToDisplay(cents: number): string {
@@ -37,16 +37,54 @@ export default function SaleForm() {
   const [selectedProductId, setSelectedProductId] = useState('')
   const [selectedQty, setSelectedQty] = useState(1)
   const [discountCents, setDiscountCents] = useState(0)
+  const [productSearch, setProductSearch] = useState('')
+  const [showProductList, setShowProductList] = useState(false)
+  const productSearchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    Promise.all([fetch('/api/customers?pageSize=100'), fetch('/api/products?pageSize=100')])
+    Promise.all([fetch('/api/customers?pageSize=200'), fetch('/api/products?pageSize=200')])
       .then(([c, p]) => Promise.all([c.json(), p.json()]))
       .then(([c, p]) => { setCustomers(c.data ?? []); setProducts(p.data ?? []) })
+  }, [])
+
+  // Close product list when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (productSearchRef.current && !productSearchRef.current.contains(e.target as Node)) {
+        setShowProductList(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const discount = discountCents / 100
   const total = Math.max(0, subtotal - discount)
+
+  // Products with remaining stock after subtracting items in cart
+  const availableProducts = products
+    .map(p => {
+      const inCart = items.find(i => i.productId === p.id)
+      return { ...p, quantity: p.quantity - (inCart?.quantity ?? 0) }
+    })
+    .filter(p => p.quantity > 0)
+
+  const filteredProducts = availableProducts.filter(p =>
+    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+    (p.category && p.category.toLowerCase().includes(productSearch.toLowerCase()))
+  )
+
+  const selectedProduct = products.find(p => p.id === selectedProductId)
+  const selectedInCart = items.find(i => i.productId === selectedProductId)
+  const maxQty = (selectedProduct?.quantity ?? 0) - (selectedInCart?.quantity ?? 0)
+
+  function selectProduct(product: typeof availableProducts[0]) {
+    setSelectedProductId(product.id)
+    setProductSearch(product.name)
+    setSelectedQty(1)
+    setShowProductList(false)
+  }
 
   function addItem() {
     if (!selectedProductId) return
@@ -60,7 +98,9 @@ export default function SaleForm() {
     } else {
       setItems(prev => [...prev, { productId: product.id, quantity: selectedQty, price: product.price, product }])
     }
-    setSelectedProductId(''); setSelectedQty(1)
+    setSelectedProductId('')
+    setProductSearch('')
+    setSelectedQty(1)
   }
 
   function removeItem(productId: string) { setItems(prev => prev.filter(i => i.productId !== productId)) }
@@ -82,8 +122,7 @@ export default function SaleForm() {
         body: JSON.stringify({
           customerId,
           items: items.map(({ productId, quantity, price }) => ({ productId, quantity, price })),
-          notes, status, paymentMethod,
-          discount,
+          notes, status, paymentMethod, discount,
         }),
       })
       const data = await res.json()
@@ -93,64 +132,77 @@ export default function SaleForm() {
     finally { setLoading(false) }
   }
 
-  // Show remaining stock after subtracting items already in cart
-  const availableProducts = products
-    .map(p => {
-      const inCart = items.find(i => i.productId === p.id)
-      return { ...p, quantity: p.quantity - (inCart?.quantity ?? 0) }
-    })
-    .filter(p => p.quantity > 0)
-
-  const selectedProduct = products.find(p => p.id === selectedProductId)
-  const selectedInCart = items.find(i => i.productId === selectedProductId)
-  const maxQty = (selectedProduct?.quantity ?? 0) - (selectedInCart?.quantity ?? 0)
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{error}</div>}
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-4">
         <h2 className="text-base font-semibold text-white">Informações da Venda</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select label="Cliente" value={customerId} onChange={e => { setCustomerId(e.target.value); setError('') }}
             options={customers.map(c => ({ value: c.id, label: c.name }))} placeholder="Selecione um cliente" required />
-          <Select label="Status" value={status} onChange={e => setStatus(e.target.value as any)}
+          <Select label="Status" value={status} onChange={e => setStatus(e.target.value as 'COMPLETED' | 'PENDING')}
             options={[{ value: 'COMPLETED', label: 'Concluída' }, { value: 'PENDING', label: 'Pendente' }]} />
         </div>
         <Select label="Forma de Pagamento" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} options={PAYMENT_OPTIONS} />
 
-        {/* Desconto */}
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-gray-300">Desconto (R$)</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">R$</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={centsToDisplay(discountCents)}
-              onChange={handleDiscountChange}
-              className="w-full pl-10 pr-3 py-2.5 rounded-lg text-sm bg-gray-800 border border-gray-600 hover:border-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors"
-            />
+            <input type="text" inputMode="numeric" value={centsToDisplay(discountCents)} onChange={handleDiscountChange}
+              className="w-full pl-10 pr-3 py-2.5 rounded-lg text-sm bg-gray-800 border border-gray-600 hover:border-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors" />
           </div>
         </div>
 
         <Textarea label="Observações (opcional)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Informações adicionais..." />
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-4">
         <h2 className="text-base font-semibold text-white">Adicionar Produtos</h2>
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <Select value={selectedProductId} onChange={e => { setSelectedProductId(e.target.value); setSelectedQty(1) }}
-              options={availableProducts.map(p => ({ value: p.id, label: `${p.name} — ${formatCurrency(p.price)} (${p.quantity} em estoque)` }))}
-              placeholder="Selecionar produto..." />
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Searchable product selector */}
+          <div className="flex-1 relative" ref={productSearchRef}>
+            <label className="text-sm font-medium text-gray-300 mb-1.5 block">Produto</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              <input
+                type="text"
+                value={productSearch}
+                onChange={e => { setProductSearch(e.target.value); setSelectedProductId(''); setShowProductList(true) }}
+                onFocus={() => setShowProductList(true)}
+                placeholder="Buscar produto..."
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg text-sm bg-gray-800 border border-gray-600 hover:border-gray-500 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors"
+              />
+            </div>
+
+            {showProductList && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-52 overflow-y-auto">
+                {filteredProducts.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-gray-500">Nenhum produto encontrado</p>
+                ) : (
+                  filteredProducts.map(p => (
+                    <button key={p.id} type="button" onClick={() => selectProduct(p)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-700 transition-colors border-b border-gray-700/50 last:border-0">
+                      <p className="text-sm font-medium text-white">{p.name}</p>
+                      <p className="text-xs text-gray-400">{formatCurrency(p.price)} • {p.quantity} em estoque</p>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
-          <div className="w-28">
-            <Input type="number" min={1} max={maxQty} value={selectedQty} onChange={e => setSelectedQty(Number(e.target.value))} placeholder="Qtd" />
+
+          <div className="flex gap-3 items-end">
+            <div className="w-24">
+              <Input label="Qtd" type="number" min={1} max={maxQty || 99} value={selectedQty}
+                onChange={e => setSelectedQty(Number(e.target.value))} placeholder="Qtd" />
+            </div>
+            <Button type="button" onClick={addItem} disabled={!selectedProductId} className="shrink-0 h-[42px]">
+              <Plus className="w-4 h-4" />Adicionar
+            </Button>
           </div>
-          <Button type="button" onClick={addItem} disabled={!selectedProductId} className="shrink-0">
-            <Plus className="w-4 h-4" />Adicionar
-          </Button>
         </div>
 
         {items.length === 0 ? (
@@ -161,15 +213,15 @@ export default function SaleForm() {
         ) : (
           <div className="space-y-2">
             {items.map((item) => (
-              <div key={item.productId} className="flex items-center gap-4 px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">{item.product?.name}</p>
+              <div key={item.productId} className="flex items-center gap-3 px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{item.product?.name}</p>
                   <p className="text-xs text-gray-400">{formatCurrency(item.price)} por unidade</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <Input type="number" min={1} max={item.product?.quantity} value={item.quantity}
-                    onChange={e => updateItemQty(item.productId, Number(e.target.value))} className="w-20 text-center" />
-                  <span className="text-sm font-semibold text-amber-400 w-24 text-right">{formatCurrency(item.price * item.quantity)}</span>
+                    onChange={e => updateItemQty(item.productId, Number(e.target.value))} className="w-16 text-center" />
+                  <span className="text-sm font-semibold text-amber-400 w-20 text-right">{formatCurrency(item.price * item.quantity)}</span>
                   <button type="button" onClick={() => removeItem(item.productId)}
                     className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
                     <Trash2 className="w-4 h-4" />
@@ -182,28 +234,26 @@ export default function SaleForm() {
       </div>
 
       {items.length > 0 && (
-        <div className="bg-gray-900 border border-amber-500/20 rounded-2xl p-6">
-          <div className="flex items-end justify-between">
+        <div className="bg-gray-900 border border-amber-500/20 rounded-2xl p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:justify-between">
             <div className="space-y-1">
-              <div className="flex items-center justify-between gap-16 text-sm text-gray-400">
+              <div className="flex items-center justify-between gap-8 text-sm text-gray-400">
                 <span>Subtotal</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
               {discount > 0 && (
-                <div className="flex items-center justify-between gap-16 text-sm text-emerald-400">
+                <div className="flex items-center justify-between gap-8 text-sm text-emerald-400">
                   <span>Desconto</span>
                   <span>- {formatCurrency(discount)}</span>
                 </div>
               )}
-              <div className="flex items-center justify-between gap-16 pt-1 border-t border-gray-700">
+              <div className="flex items-center justify-between gap-8 pt-1 border-t border-gray-700">
                 <span className="text-sm text-gray-400">Total</span>
                 <span className="text-3xl font-bold text-amber-400">{formatCurrency(total)}</span>
               </div>
-              <p className="text-xs text-gray-500">
-                {items.length} produto(s) • {items.reduce((s, i) => s + i.quantity, 0)} unidades
-              </p>
+              <p className="text-xs text-gray-500">{items.length} produto(s) • {items.reduce((s, i) => s + i.quantity, 0)} unidades</p>
             </div>
-            <Button type="submit" loading={loading} size="lg">Finalizar Venda</Button>
+            <Button type="submit" loading={loading} size="lg" className="w-full sm:w-auto">Finalizar Venda</Button>
           </div>
         </div>
       )}
