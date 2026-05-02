@@ -52,6 +52,8 @@ export default function SaleForm() {
     if (!selectedProductId) return
     const product = products.find((p) => p.id === selectedProductId)
     if (!product) return
+    const remaining = product.quantity - (items.find(i => i.productId === selectedProductId)?.quantity ?? 0)
+    if (selectedQty > remaining) return
     const existing = items.find((i) => i.productId === selectedProductId)
     if (existing) {
       setItems(prev => prev.map(i => i.productId === selectedProductId ? { ...i, quantity: i.quantity + selectedQty } : i))
@@ -91,9 +93,17 @@ export default function SaleForm() {
     finally { setLoading(false) }
   }
 
-  const availableProducts = products.filter(p => !items.some(i => i.productId === p.id) && p.quantity > 0)
+  // Show remaining stock after subtracting items already in cart
+  const availableProducts = products
+    .map(p => {
+      const inCart = items.find(i => i.productId === p.id)
+      return { ...p, quantity: p.quantity - (inCart?.quantity ?? 0) }
+    })
+    .filter(p => p.quantity > 0)
+
   const selectedProduct = products.find(p => p.id === selectedProductId)
-  const maxQty = selectedProduct?.quantity ?? 99
+  const selectedInCart = items.find(i => i.productId === selectedProductId)
+  const maxQty = (selectedProduct?.quantity ?? 0) - (selectedInCart?.quantity ?? 0)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
