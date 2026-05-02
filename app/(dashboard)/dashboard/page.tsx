@@ -67,7 +67,7 @@ async function getDashboardStats() {
       totalProducts,
       totalCustomers,
       lowStockProducts,
-      recentSales: JSON.parse(JSON.stringify(recentSales)),
+      recentSales: JSON.parse(JSON.stringify(recentSales)) as any,
       salesChartData: Object.entries(salesByDate).map(([date, data]) => ({
         date,
         total: Math.round(data.total * 100) / 100,
