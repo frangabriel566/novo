@@ -19,7 +19,9 @@ export const dynamic = 'force-dynamic'
 
 async function getDashboardStats(): Promise<DashboardStats | null> {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXTAUTH_URL || 'http://localhost:3000'
     const { cookies } = await import('next/headers')
     const token = cookies().get('token')?.value
 
