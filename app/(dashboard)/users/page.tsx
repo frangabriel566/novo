@@ -61,7 +61,7 @@ export default function UsersPage() {
       <Header title="Usuários" subtitle={`${users.length} usuário(s) cadastrado(s)`}
         actions={<Button onClick={openCreate}><Plus className="w-4 h-4" />Novo Usuário</Button>} />
 
-      <div className="px-8 py-6 animate-fade-in">
+      <div className="px-4 lg:px-8 py-6 animate-fade-in">
         <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
           {loading ? <PageLoader /> : users.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-500">
@@ -69,44 +69,78 @@ export default function UsersPage() {
               <p className="font-medium">Nenhum usuário encontrado</p>
             </div>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-800">
-                  {['Usuário','Login','Perfil','Vendas','Cadastro','Ações'].map(h => (
-                    <th key={h} className={`px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider ${h==='Ações'?'text-right':'text-left'}`}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Mobile cards */}
+              <div className="sm:hidden divide-y divide-gray-800">
                 {users.map((u) => (
-                  <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm">
-                          {u.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-sm font-medium text-white">{u.name}</span>
+                  <div key={u.id} className="px-4 py-3 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm shrink-0">
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white truncate">{u.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${u.role === 'ADMIN' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
+                          {u.role === 'ADMIN' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                          {u.role === 'ADMIN' ? 'Admin' : 'Usuário'}
+                        </span>
+                        <span className="text-xs text-gray-500">{u._count.sales} venda(s)</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{u.email}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${u.role === 'ADMIN' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
-                        {u.role === 'ADMIN' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                        {u.role === 'ADMIN' ? 'Admin' : 'Usuário'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{u._count.sales}</td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{formatDate(u.createdAt)}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEdit(u)} className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => setDeleteId(u.id)} className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => openEdit(u)}
+                        className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setDeleteId(u.id)}
+                        className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop table */}
+              <table className="hidden sm:table w-full">
+                <thead>
+                  <tr className="border-b border-gray-800">
+                    {['Usuário','Login','Perfil','Vendas','Cadastro','Ações'].map(h => (
+                      <th key={h} className={`px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider ${h==='Ações'?'text-right':'text-left'}`}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm">
+                            {u.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-medium text-white">{u.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-400">{u.email}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${u.role === 'ADMIN' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
+                          {u.role === 'ADMIN' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                          {u.role === 'ADMIN' ? 'Admin' : 'Usuário'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-400">{u._count.sales}</td>
+                      <td className="px-6 py-4 text-sm text-gray-400">{formatDate(u.createdAt)}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => openEdit(u)} className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteId(u.id)} className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       </div>
@@ -119,7 +153,7 @@ export default function UsersPage() {
           <Input label={editUser ? 'Nova senha (deixe em branco para manter)' : 'Senha'} type="password"
             value={form.password} onChange={e => setForm({...form, password: e.target.value})}
             placeholder={editUser ? '••••••' : 'Mínimo 6 caracteres'} required={!editUser} />
-          <Select label="Perfil" value={form.role} onChange={e => setForm({...form, role: e.target.value as any})}
+          <Select label="Perfil" value={form.role} onChange={e => setForm({...form, role: e.target.value as 'USER'|'ADMIN'})}
             options={[{value:'USER',label:'Usuário'},{value:'ADMIN',label:'Administrador'}]} />
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>

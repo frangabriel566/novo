@@ -68,7 +68,7 @@ export default function StockPage() {
       <Header title="Controle de Estoque" subtitle="Histórico de movimentações"
         actions={<Button onClick={() => { setError(''); setModalOpen(true) }}><Plus className="w-4 h-4" />Movimentar Estoque</Button>} />
 
-      <div className="px-8 py-6 space-y-4 animate-fade-in">
+      <div className="px-4 lg:px-8 py-6 space-y-4 animate-fade-in">
         {/* Low stock products */}
         {products.filter(p => p.quantity < 10).length > 0 && (
           <div className="bg-gray-900 border border-amber-500/20 rounded-2xl p-4">
@@ -94,37 +94,63 @@ export default function StockPage() {
               <p className="font-medium">Nenhuma movimentação registrada</p>
             </div>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-800">
-                  {['Produto','Tipo','Quantidade','Estoque Atual','Motivo','Usuário','Data'].map(h => (
-                    <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Mobile cards */}
+              <div className="sm:hidden divide-y divide-gray-800">
                 {movements.map((m) => {
                   const cfg = typeConfig[m.type]
                   return (
-                    <tr key={m.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-white">{m.product.name}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.color}`}>
+                    <div key={m.id} className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-white truncate">{m.product.name}</p>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border shrink-0 ${cfg.bg} ${cfg.color}`}>
                           {cfg.icon}{cfg.label}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-white">{m.type === 'OUT' ? '-' : '+'}{m.quantity}</td>
-                      <td className="px-6 py-4">
-                        <span className={`text-sm font-bold ${m.product.quantity < 10 ? 'text-amber-400' : 'text-emerald-400'}`}>{m.product.quantity}</span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-400">{m.reason || '—'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-400">{m.user.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-400">{formatDateTime(m.createdAt)}</td>
-                    </tr>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 flex-wrap">
+                        <span className="font-semibold text-white">{m.type === 'OUT' ? '-' : '+'}{m.quantity} un</span>
+                        <span>Estoque: <span className={m.product.quantity < 10 ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>{m.product.quantity}</span></span>
+                        {m.reason && <span>{m.reason}</span>}
+                        <span>{formatDateTime(m.createdAt)}</span>
+                      </div>
+                    </div>
                   )
                 })}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop table */}
+              <table className="hidden sm:table w-full">
+                <thead>
+                  <tr className="border-b border-gray-800">
+                    {['Produto','Tipo','Quantidade','Estoque Atual','Motivo','Usuário','Data'].map(h => (
+                      <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {movements.map((m) => {
+                    const cfg = typeConfig[m.type]
+                    return (
+                      <tr key={m.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                        <td className="px-6 py-4 text-sm font-medium text-white">{m.product.name}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.color}`}>
+                            {cfg.icon}{cfg.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-white">{m.type === 'OUT' ? '-' : '+'}{m.quantity}</td>
+                        <td className="px-6 py-4">
+                          <span className={`text-sm font-bold ${m.product.quantity < 10 ? 'text-amber-400' : 'text-emerald-400'}`}>{m.product.quantity}</span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-400">{m.reason || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-400">{m.user.name}</td>
+                        <td className="px-6 py-4 text-sm text-gray-400">{formatDateTime(m.createdAt)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
 
