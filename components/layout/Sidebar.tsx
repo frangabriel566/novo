@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   Crown, LayoutDashboard, Package, Users, ShoppingCart,
   LogOut, ChevronRight, BarChart3, DollarSign, Layers,
-  UserCog, Sun, Moon, X, HandCoins,
+  UserCog, Sun, Moon, X, Wallet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -18,7 +18,7 @@ const navItems = [
   { label: 'Clientes',   href: '/customers',  icon: Users },
   { label: 'Vendas',     href: '/sales',      icon: ShoppingCart },
   { label: 'Despesas',   href: '/expenses',   icon: DollarSign },
-  { label: 'Fiado',      href: '/fiado',      icon: HandCoins },
+  { label: 'Fiado',      href: '/fiado',      icon: Wallet },
   { label: 'Relatórios', href: '/reports',    icon: BarChart3 },
   { label: 'Usuários',   href: '/users',      icon: UserCog },
 ]

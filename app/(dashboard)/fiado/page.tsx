@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, CheckCircle, Clock, HandCoins } from 'lucide-react'
+import { Plus, Trash2, CheckCircle, Clock, Wallet } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -126,7 +126,7 @@ export default function FiadoPage() {
         {/* Lista */}
         {loading ? <PageLoader /> : fiados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-500">
-            <HandCoins className="w-12 h-12 text-gray-700" />
+            <Wallet className="w-12 h-12 text-gray-700" />
             <p className="font-medium">Nenhum fiado registrado</p>
             <Button onClick={openModal} size="sm"><Plus className="w-4 h-4" />Novo Fiado</Button>
           </div>
