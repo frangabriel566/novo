@@ -1,38 +1,79 @@
 import { Metadata } from 'next'
-import {
-  DollarSign,
-  ShoppingCart,
-  Package,
-  Users,
-  AlertTriangle,
-} from 'lucide-react'
+import { DollarSign, ShoppingCart, Package, Users, AlertTriangle } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import StatsCard from '@/components/dashboard/StatsCard'
 import SalesChart from '@/components/dashboard/SalesChart'
 import RecentSales from '@/components/dashboard/RecentSales'
 import { formatCurrency } from '@/lib/utils'
-import { DashboardStats } from '@/types'
 import { getAuthUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 export const dynamic = 'force-dynamic'
 
-async function getDashboardStats(): Promise<DashboardStats | null> {
+async function getDashboardStats() {
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXTAUTH_URL || 'http://localhost:3000'
-    const { cookies } = await import('next/headers')
-    const token = cookies().get('token')?.value
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const res = await fetch(`${baseUrl}/api/dashboard`, {
-      headers: { Cookie: `token=${token}` },
-      cache: 'no-store',
-    })
+    const [
+      totalRevenueResult,
+      totalSales,
+      totalProducts,
+      totalCustomers,
+      lowStockProducts,
+      recentSales,
+      salesLast30Days,
+    ] = await Promise.all([
+      prisma.sale.aggregate({ where: { status: 'COMPLETED' }, _sum: { total: true } }),
+      prisma.sale.count(),
+      prisma.product.count(),
+      prisma.customer.count(),
+      prisma.product.count({ where: { quantity: { lt: 10 } } }),
+      prisma.sale.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: {
+          customer: true,
+          user: { select: { id: true, name: true } },
+          items: { include: { product: true } },
+        },
+      }),
+      prisma.sale.findMany({
+        where: { status: 'COMPLETED', createdAt: { gte: thirtyDaysAgo } },
+        select: { total: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ])
 
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.data
+    const salesByDate: Record<string, { total: number; count: number }> = {}
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const key = date.toISOString().split('T')[0]
+      salesByDate[key] = { total: 0, count: 0 }
+    }
+    for (const sale of salesLast30Days) {
+      const key = new Date(sale.createdAt).toISOString().split('T')[0]
+      if (salesByDate[key]) {
+        salesByDate[key].total += sale.total
+        salesByDate[key].count += 1
+      }
+    }
+
+    return {
+      totalRevenue: totalRevenueResult._sum.total ?? 0,
+      totalSales,
+      totalProducts,
+      totalCustomers,
+      lowStockProducts,
+      recentSales,
+      salesChartData: Object.entries(salesByDate).map(([date, data]) => ({
+        date,
+        total: Math.round(data.total * 100) / 100,
+        count: data.count,
+      })),
+    }
   } catch {
     return null
   }
@@ -48,40 +89,14 @@ export default async function DashboardPage() {
         subtitle="Aqui está o resumo do seu negócio hoje"
       />
 
-      <div className="px-8 py-6 space-y-6 animate-fade-in">
-        {/* Stats Grid */}
+      <div className="px-4 lg:px-8 py-6 space-y-6 animate-fade-in">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatsCard
-            title="Receita Total"
-            value={formatCurrency(stats?.totalRevenue ?? 0)}
-            subtitle="Vendas concluídas"
-            icon={DollarSign}
-            color="amber"
-          />
-          <StatsCard
-            title="Total de Vendas"
-            value={stats?.totalSales ?? 0}
-            subtitle="Todas as vendas"
-            icon={ShoppingCart}
-            color="blue"
-          />
-          <StatsCard
-            title="Produtos"
-            value={stats?.totalProducts ?? 0}
-            subtitle={`${stats?.lowStockProducts ?? 0} com estoque baixo`}
-            icon={Package}
-            color="emerald"
-          />
-          <StatsCard
-            title="Clientes"
-            value={stats?.totalCustomers ?? 0}
-            subtitle="Clientes cadastrados"
-            icon={Users}
-            color="rose"
-          />
+          <StatsCard title="Receita Total" value={formatCurrency(stats?.totalRevenue ?? 0)} subtitle="Vendas concluídas" icon={DollarSign} color="amber" />
+          <StatsCard title="Total de Vendas" value={stats?.totalSales ?? 0} subtitle="Todas as vendas" icon={ShoppingCart} color="blue" />
+          <StatsCard title="Produtos" value={stats?.totalProducts ?? 0} subtitle={`${stats?.lowStockProducts ?? 0} com estoque baixo`} icon={Package} color="emerald" />
+          <StatsCard title="Clientes" value={stats?.totalCustomers ?? 0} subtitle="Clientes cadastrados" icon={Users} color="rose" />
         </div>
 
-        {/* Low stock alert */}
         {(stats?.lowStockProducts ?? 0) > 0 && (
           <div className="flex items-center gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
@@ -92,7 +107,6 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Chart + Recent Sales */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2">
             <SalesChart data={stats?.salesChartData ?? []} />
