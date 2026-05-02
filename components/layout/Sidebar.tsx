@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { useTheme } from '@/context/ThemeContext'
 
-const navItems = [
+const adminNavItems = [
   { label: 'Dashboard',  href: '/dashboard',  icon: LayoutDashboard },
   { label: 'Produtos',   href: '/products',   icon: Package },
   { label: 'Estoque',    href: '/stock',      icon: Layers },
@@ -23,18 +23,24 @@ const navItems = [
   { label: 'Usuários',   href: '/users',      icon: UserCog },
 ]
 
+const userNavItems = [
+  { label: 'Vendas', href: '/sales', icon: ShoppingCart },
+]
+
 interface SidebarProps {
   userName?: string
   userEmail?: string
+  userRole?: string
   isOpen?: boolean
   onClose?: () => void
 }
 
-export default function Sidebar({ userName, userEmail, isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ userName, userEmail, userRole, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { theme, toggleTheme } = useTheme()
   const [loggingOut, setLoggingOut] = useState(false)
+  const navItems = userRole === 'ADMIN' ? adminNavItems : userNavItems
 
   async function handleLogout() {
     setLoggingOut(true)

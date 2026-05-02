@@ -7,9 +7,10 @@ interface DashboardShellProps {
   children: React.ReactNode
   userName?: string
   userEmail?: string
+  userRole?: string
 }
 
-export default function DashboardShell({ children, userName, userEmail }: DashboardShellProps) {
+export default function DashboardShell({ children, userName, userEmail, userRole }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -25,6 +26,7 @@ export default function DashboardShell({ children, userName, userEmail }: Dashbo
       <Sidebar
         userName={userName}
         userEmail={userEmail}
+        userRole={userRole}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />

@@ -4,25 +4,21 @@ import { jwtVerify } from 'jose'
 const publicPaths = ['/login', '/register']
 const publicApiPaths = ['/api/auth/login', '/api/auth/register']
 
+// Pages blocked for USER role (admin only)
+const adminOnlyPaths = ['/dashboard', '/products', '/stock', '/customers', '/expenses', '/fiado', '/reports', '/users']
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow public pages
   if (publicPaths.some((path) => pathname.startsWith(path))) {
     return NextResponse.next()
   }
 
-  // Allow public API routes
   if (publicApiPaths.some((path) => pathname.startsWith(path))) {
     return NextResponse.next()
   }
 
-  // Allow static files
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon') ||
-    pathname.includes('.')
-  ) {
+  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon') || pathname.includes('.')) {
     return NextResponse.next()
   }
 
@@ -37,7 +33,14 @@ export async function middleware(request: NextRequest) {
 
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
-    await jwtVerify(token, secret)
+    const { payload } = await jwtVerify(token, secret)
+    const role = payload.role as string
+
+    // Redirect USER role away from admin-only pages
+    if (role !== 'ADMIN' && adminOnlyPaths.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL('/sales', request.url))
+    }
+
     return NextResponse.next()
   } catch {
     if (pathname.startsWith('/api/')) {
