@@ -18,7 +18,7 @@ const adminNavItems = [
   { label: 'Clientes',   href: '/customers',  icon: Users },
   { label: 'Vendas',     href: '/sales',      icon: ShoppingCart },
   { label: 'Despesas',   href: '/expenses',   icon: DollarSign },
-  { label: 'Fiado',      href: '/fiado',      icon: Wallet },
+  { label: 'Conta em aberto', href: '/fiado', icon: Wallet },
   { label: 'Relatórios', href: '/reports',    icon: BarChart3 },
   { label: 'Usuários',   href: '/users',      icon: UserCog },
 ]

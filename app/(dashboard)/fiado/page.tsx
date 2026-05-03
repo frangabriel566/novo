@@ -97,9 +97,9 @@ export default function FiadoPage() {
   return (
     <div>
       <Header
-        title="Fiado"
+        title="Conta em aberto"
         subtitle={`${pending.length} pendente(s) • Total: ${formatCurrency(totalPending)}`}
-        actions={<Button onClick={openModal}><Plus className="w-4 h-4" />Novo Fiado</Button>}
+        actions={<Button onClick={openModal}><Plus className="w-4 h-4" />Nova Conta</Button>}
       />
 
       <div className="px-4 lg:px-8 py-6 space-y-6 animate-fade-in">
@@ -127,8 +127,8 @@ export default function FiadoPage() {
         {loading ? <PageLoader /> : fiados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-500">
             <Wallet className="w-12 h-12 text-gray-700" />
-            <p className="font-medium">Nenhum fiado registrado</p>
-            <Button onClick={openModal} size="sm"><Plus className="w-4 h-4" />Novo Fiado</Button>
+            <p className="font-medium">Nenhuma conta em aberto registrada</p>
+            <Button onClick={openModal} size="sm"><Plus className="w-4 h-4" />Nova Conta</Button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -198,7 +198,7 @@ export default function FiadoPage() {
       </div>
 
       {/* Modal novo fiado */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Novo Fiado">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Nova Conta em Aberto">
         <form onSubmit={handleSave} className="space-y-4">
           {error && <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{error}</div>}
           <Input label="Nome do cliente" value={form.customerName}
@@ -220,13 +220,13 @@ export default function FiadoPage() {
             placeholder="Ex: comprou no dia 01/05..." />
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>
-            <Button type="submit" loading={saving} className="flex-1">Registrar Fiado</Button>
+            <Button type="submit" loading={saving} className="flex-1">Registrar Conta</Button>
           </div>
         </form>
       </Modal>
 
       {/* Modal confirmar exclusão */}
-      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Remover Fiado" size="sm">
+      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Remover Conta" size="sm">
         <p className="text-gray-300 text-sm mb-6">Tem certeza que deseja remover este registro?</p>
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => setDeleteId(null)} className="flex-1">Cancelar</Button>
