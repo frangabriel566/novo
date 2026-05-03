@@ -23,6 +23,83 @@ function centsToDisplay(cents: number): string {
   return (cents / 100).toFixed(2).replace('.', ',')
 }
 
+function SearchableSelect({
+  label,
+  placeholder,
+  items,
+  onSelect,
+  renderItem,
+  renderSelected,
+}: {
+  label: string
+  placeholder: string
+  items: { id: string; primary: string; secondary?: string }[]
+  onSelect: (id: string) => void
+  renderItem?: (item: { id: string; primary: string; secondary?: string }) => React.ReactNode
+  renderSelected?: (item: { id: string; primary: string; secondary?: string }) => string
+}) {
+  const [search, setSearch] = useState('')
+  const [show, setShow] = useState(false)
+  const [selected, setSelected] = useState<{ id: string; primary: string; secondary?: string } | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setShow(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const filtered = items.filter(i =>
+    i.primary.toLowerCase().includes(search.toLowerCase()) ||
+    (i.secondary && i.secondary.toLowerCase().includes(search.toLowerCase()))
+  )
+
+  function pick(item: { id: string; primary: string; secondary?: string }) {
+    setSelected(item)
+    setSearch(renderSelected ? renderSelected(item) : item.primary)
+    setShow(false)
+    onSelect(item.id)
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5" ref={ref}>
+      <label className="text-sm font-medium text-gray-300">{label}</label>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setSelected(null); onSelect(''); setShow(true) }}
+          onFocus={() => setShow(true)}
+          placeholder={placeholder}
+          className="w-full pl-9 pr-3 py-2.5 rounded-lg text-sm bg-gray-800 border border-gray-600 hover:border-gray-500 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors"
+        />
+      {show && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-52 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-gray-500">Nenhum resultado</p>
+          ) : (
+            filtered.map(item => (
+              <button key={item.id} type="button" onClick={() => pick(item)}
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-700 transition-colors border-b border-gray-700/50 last:border-0">
+                {renderItem ? renderItem(item) : (
+                  <>
+                    <p className="text-sm font-medium text-white">{item.primary}</p>
+                    {item.secondary && <p className="text-xs text-gray-400">{item.secondary}</p>}
+                  </>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+      </div>
+    </div>
+  )
+}
+
 export default function SaleForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -47,7 +124,6 @@ export default function SaleForm() {
       .then(([c, p]) => { setCustomers(c.data ?? []); setProducts(p.data ?? []) })
   }, [])
 
-  // Close product list when clicking outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (productSearchRef.current && !productSearchRef.current.contains(e.target as Node)) {
@@ -62,7 +138,6 @@ export default function SaleForm() {
   const discount = discountCents / 100
   const total = Math.max(0, subtotal - discount)
 
-  // Products with remaining stock after subtracting items in cart
   const availableProducts = products
     .map(p => {
       const inCart = items.find(i => i.productId === p.id)
@@ -138,13 +213,28 @@ export default function SaleForm() {
 
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-6 space-y-4">
         <h2 className="text-base font-semibold text-white">Informações da Venda</h2>
+
+        {/* Customer searchable */}
+        <div className="relative">
+          <SearchableSelect
+            label="Cliente"
+            placeholder="Buscar cliente..."
+            items={customers.map(c => ({ id: c.id, primary: c.name, secondary: c.phone ?? undefined }))}
+            onSelect={id => { setCustomerId(id); setError('') }}
+            renderItem={item => (
+              <>
+                <p className="text-sm font-medium text-white">{item.primary}</p>
+                {item.secondary && <p className="text-xs text-gray-400">{item.secondary}</p>}
+              </>
+            )}
+          />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Select label="Cliente" value={customerId} onChange={e => { setCustomerId(e.target.value); setError('') }}
-            options={customers.map(c => ({ value: c.id, label: c.name }))} placeholder="Selecione um cliente" required />
           <Select label="Status" value={status} onChange={e => setStatus(e.target.value as 'COMPLETED' | 'PENDING')}
             options={[{ value: 'COMPLETED', label: 'Concluída' }, { value: 'PENDING', label: 'Pendente' }]} />
+          <Select label="Forma de Pagamento" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} options={PAYMENT_OPTIONS} />
         </div>
-        <Select label="Forma de Pagamento" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} options={PAYMENT_OPTIONS} />
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-gray-300">Desconto (R$)</label>
@@ -176,7 +266,6 @@ export default function SaleForm() {
                 className="w-full pl-9 pr-3 py-2.5 rounded-lg text-sm bg-gray-800 border border-gray-600 hover:border-gray-500 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors"
               />
             </div>
-
             {showProductList && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-52 overflow-y-auto">
                 {filteredProducts.length === 0 ? (
@@ -238,13 +327,11 @@ export default function SaleForm() {
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:justify-between">
             <div className="space-y-1">
               <div className="flex items-center justify-between gap-8 text-sm text-gray-400">
-                <span>Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
+                <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
               </div>
               {discount > 0 && (
                 <div className="flex items-center justify-between gap-8 text-sm text-emerald-400">
-                  <span>Desconto</span>
-                  <span>- {formatCurrency(discount)}</span>
+                  <span>Desconto</span><span>- {formatCurrency(discount)}</span>
                 </div>
               )}
               <div className="flex items-center justify-between gap-8 pt-1 border-t border-gray-700">
