@@ -102,7 +102,7 @@ export default async function DashboardPage() {
     <div>
       <Header
         title={`Olá, ${user?.name?.split(' ')[0] ?? 'Usuário'} 👋`}
-        subtitle="Aqui está o resumo do seu negócio hoje"
+        subtitle={`Saldo da conta: ${formatCurrency(stats?.saldo ?? 0)}`}
       />
 
       <div className="px-4 lg:px-8 py-6 space-y-6 animate-fade-in">
