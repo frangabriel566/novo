@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Mail, Lock, Save } from 'lucide-react'
+import { User, Lock, Save, Wallet } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -23,10 +23,18 @@ export default function ProfilePage() {
   const [currentPw, setCurrentPw] = useState('')
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
+  const [saldoAjuste, setSaldoAjuste] = useState('0')
+  const [savingSaldo, setSavingSaldo] = useState(false)
+  const [saldoSuccess, setSaldoSuccess] = useState(false)
+  const [saldoError, setSaldoError] = useState('')
 
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.json()).then(d => {
-      if (d.data) { setProfile(d.data); setName(d.data.name); setEmail(d.data.email) }
+    Promise.all([
+      fetch('/api/auth/me').then(r => r.json()),
+      fetch('/api/settings').then(r => r.json()),
+    ]).then(([me, setting]) => {
+      if (me.data) { setProfile(me.data); setName(me.data.name); setEmail(me.data.email) }
+      setSaldoAjuste(String(setting.value ?? 0))
     }).finally(() => setLoading(false))
   }, [])
 
@@ -93,6 +101,31 @@ export default function ProfilePage() {
             <Input label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
             <Button type="submit" loading={savingInfo}>
               <Save className="w-4 h-4" /> Salvar informações
+            </Button>
+          </form>
+        </div>
+
+        {/* Saldo de ajuste */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <h3 className="text-base font-semibold text-white mb-1 flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-amber-400" /> Ajuste de Saldo
+          </h3>
+          <p className="text-xs text-gray-500 mb-4">Valor extra somado ao saldo da conta (ex: dinheiro em caixa não registrado como venda).</p>
+          <form onSubmit={async (e) => {
+            e.preventDefault(); setSavingSaldo(true); setSaldoError(''); setSaldoSuccess(false)
+            try {
+              const res = await fetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ value: saldoAjuste }) })
+              const d = await res.json()
+              if (!res.ok) { setSaldoError(d.error); return }
+              setSaldoSuccess(true)
+              setTimeout(() => setSaldoSuccess(false), 3000)
+            } finally { setSavingSaldo(false) }
+          }} className="space-y-4">
+            {saldoError && <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{saldoError}</div>}
+            {saldoSuccess && <div className="px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400">✓ Ajuste salvo com sucesso!</div>}
+            <Input label="Valor de ajuste (R$)" type="number" step="0.01" value={saldoAjuste} onChange={e => setSaldoAjuste(e.target.value)} placeholder="Ex: 6.00" />
+            <Button type="submit" loading={savingSaldo}>
+              <Save className="w-4 h-4" /> Salvar ajuste
             </Button>
           </form>
         </div>

@@ -26,6 +26,7 @@ async function getDashboardStats() {
       salesLast30Days,
       totalExpensesResult,
       totalFiadoPaidResult,
+      saldoAjusteSetting,
     ] = await Promise.all([
       prisma.sale.aggregate({ where: { status: 'COMPLETED' }, _sum: { total: true } }),
       prisma.sale.count(),
@@ -52,6 +53,7 @@ async function getDashboardStats() {
       }),
       prisma.expense.aggregate({ _sum: { amount: true } }),
       prisma.fiado.aggregate({ where: { status: 'COMPLETED' }, _sum: { amount: true } }),
+      prisma.setting.findUnique({ where: { key: 'saldo_ajuste' } }),
     ])
 
     const salesByDate: Record<string, { total: number; count: number }> = {}
@@ -72,12 +74,14 @@ async function getDashboardStats() {
     const totalRevenue = totalRevenueResult._sum.total ?? 0
     const totalExpenses = totalExpensesResult._sum.amount ?? 0
     const totalFiadoPaid = totalFiadoPaidResult._sum.amount ?? 0
-    const saldo = totalRevenue + totalFiadoPaid - totalExpenses
+    const saldoAjuste = saldoAjusteSetting ? parseFloat(saldoAjusteSetting.value) : 0
+    const saldo = totalRevenue + totalFiadoPaid - totalExpenses + saldoAjuste
 
     return {
       totalRevenue,
       totalExpenses,
       totalFiadoPaid,
+      saldoAjuste,
       saldo,
       totalSales,
       totalProducts,
@@ -129,6 +133,12 @@ export default async function DashboardPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-blue-400" /> Fiados recebidos</span>
                   <span className="text-blue-400 font-medium">+{formatCurrency(stats?.totalFiadoPaid ?? 0)}</span>
+                </div>
+              )}
+              {(stats?.saldoAjuste ?? 0) !== 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-purple-400" /> Ajuste de saldo</span>
+                  <span className="text-purple-400 font-medium">{(stats?.saldoAjuste ?? 0) >= 0 ? '+' : ''}{formatCurrency(stats?.saldoAjuste ?? 0)}</span>
                 </div>
               )}
               {(stats?.totalExpenses ?? 0) > 0 && (
