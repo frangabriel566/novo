@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { DollarSign, ShoppingCart, Package, Users, AlertTriangle } from 'lucide-react'
+import { DollarSign, ShoppingCart, Package, Users, AlertTriangle, TrendingUp, TrendingDown, Wallet } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import StatsCard from '@/components/dashboard/StatsCard'
 import SalesChart from '@/components/dashboard/SalesChart'
@@ -102,11 +102,46 @@ export default async function DashboardPage() {
       />
 
       <div className="px-4 lg:px-8 py-6 space-y-6 animate-fade-in">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatsCard title="Saldo da Conta" value={formatCurrency(stats?.saldo ?? 0)} subtitle="Vendas − Despesas + Fiados pagos" icon={DollarSign} color="amber" />
-          <StatsCard title="Total de Vendas" value={stats?.totalSales ?? 0} subtitle="Todas as vendas" icon={ShoppingCart} color="blue" />
-          <StatsCard title="Produtos" value={stats?.totalProducts ?? 0} subtitle={`${stats?.lowStockProducts ?? 0} com estoque baixo`} icon={Package} color="emerald" />
-          <StatsCard title="Clientes" value={stats?.totalCustomers ?? 0} subtitle="Clientes cadastrados" icon={Users} color="rose" />
+
+        {/* Saldo principal + detalhamento */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Card saldo grande */}
+          <div className="lg:col-span-1 bg-gray-900 border border-amber-500/30 rounded-2xl p-6 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-400">Saldo da Conta</p>
+              <div className="p-2 rounded-xl bg-amber-500/10">
+                <Wallet className="w-5 h-5 text-amber-400" />
+              </div>
+            </div>
+            <p className={`text-3xl font-bold ${(stats?.saldo ?? 0) >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
+              {formatCurrency(stats?.saldo ?? 0)}
+            </p>
+            <div className="mt-4 space-y-1.5 border-t border-gray-800 pt-4">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-emerald-400" /> Receita vendas</span>
+                <span className="text-emerald-400 font-medium">+{formatCurrency(stats?.totalRevenue ?? 0)}</span>
+              </div>
+              {(stats?.totalFiadoPaid ?? 0) > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-blue-400" /> Fiados recebidos</span>
+                  <span className="text-blue-400 font-medium">+{formatCurrency(stats?.totalFiadoPaid ?? 0)}</span>
+                </div>
+              )}
+              {(stats?.totalExpenses ?? 0) > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 flex items-center gap-1"><TrendingDown className="w-3 h-3 text-rose-400" /> Despesas</span>
+                  <span className="text-rose-400 font-medium">−{formatCurrency(stats?.totalExpenses ?? 0)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Cards secundários */}
+          <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatsCard title="Total de Vendas" value={stats?.totalSales ?? 0} subtitle="Todas as vendas" icon={ShoppingCart} color="blue" />
+            <StatsCard title="Produtos" value={stats?.totalProducts ?? 0} subtitle={`${stats?.lowStockProducts ?? 0} com estoque baixo`} icon={Package} color="emerald" />
+            <StatsCard title="Clientes" value={stats?.totalCustomers ?? 0} subtitle="Clientes cadastrados" icon={Users} color="rose" />
+          </div>
         </div>
 
         {(stats?.lowStockProducts ?? 0) > 0 && (
