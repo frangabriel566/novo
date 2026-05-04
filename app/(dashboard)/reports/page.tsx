@@ -8,7 +8,7 @@ import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatCurrency } from '@/lib/utils'
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Edit2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Edit2, Trash2 } from 'lucide-react'
 
 const PAYMENT_LABELS: Record<string, string> = {
   CASH: 'Dinheiro', CREDIT_CARD: 'Cartão Crédito', DEBIT_CARD: 'Cartão Débito',
@@ -38,6 +38,8 @@ export default function ReportsPage() {
   const [productForm, setProductForm] = useState<ProductEditForm>({ name: '', price: '', category: '', quantity: '' })
   const [savingProduct, setSavingProduct] = useState(false)
   const [productError, setProductError] = useState('')
+  const [deleteProductId, setDeleteProductId] = useState<string | null>(null)
+  const [deletingProduct, setDeletingProduct] = useState(false)
 
   // Customer edit state
   const [customerModal, setCustomerModal] = useState(false)
@@ -45,6 +47,8 @@ export default function ReportsPage() {
   const [customerForm, setCustomerForm] = useState<CustomerEditForm>({ name: '', phone: '', address: '' })
   const [savingCustomer, setSavingCustomer] = useState(false)
   const [customerError, setCustomerError] = useState('')
+  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null)
+  const [deletingCustomer, setDeletingCustomer] = useState(false)
 
   async function loadReport() {
     setLoading(true)
@@ -101,6 +105,26 @@ export default function ReportsPage() {
     })
     setCustomerError('')
     setCustomerModal(true)
+  }
+
+  async function handleDeleteProduct() {
+    if (!deleteProductId) return
+    setDeletingProduct(true)
+    try {
+      await fetch(`/api/products/${deleteProductId}`, { method: 'DELETE' })
+      setDeleteProductId(null)
+      loadReport()
+    } finally { setDeletingProduct(false) }
+  }
+
+  async function handleDeleteCustomer() {
+    if (!deleteCustomerId) return
+    setDeletingCustomer(true)
+    try {
+      await fetch(`/api/customers/${deleteCustomerId}`, { method: 'DELETE' })
+      setDeleteCustomerId(null)
+      loadReport()
+    } finally { setDeletingCustomer(false) }
   }
 
   async function handleSaveCustomer(e: React.FormEvent) {
@@ -204,11 +228,18 @@ export default function ReportsPage() {
                         </div>
                         <span className="text-sm font-semibold text-amber-400">{formatCurrency(p._sum.price * p._sum.quantity)}</span>
                         {p.productId && (
-                          <button onClick={() => openEditProduct(p)}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors shrink-0"
-                            title="Editar produto">
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => openEditProduct(p)}
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                              title="Editar produto">
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => setDeleteProductId(p.productId)}
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              title="Excluir produto">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -232,11 +263,18 @@ export default function ReportsPage() {
                         </div>
                         <span className="text-sm font-semibold text-emerald-400">{formatCurrency(c._sum.total)}</span>
                         {c.customerId && (
-                          <button onClick={() => openEditCustomer(c)}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors shrink-0"
-                            title="Editar cliente">
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => openEditCustomer(c)}
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                              title="Editar cliente">
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => setDeleteCustomerId(c.customerId)}
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              title="Excluir cliente">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -279,6 +317,24 @@ export default function ReportsPage() {
             <Button type="submit" loading={savingProduct} className="flex-1">Salvar</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal confirmar exclusão produto */}
+      <Modal isOpen={!!deleteProductId} onClose={() => setDeleteProductId(null)} title="Excluir Produto" size="sm">
+        <p className="text-gray-300 text-sm mb-6">Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.</p>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setDeleteProductId(null)} className="flex-1">Cancelar</Button>
+          <Button variant="danger" onClick={handleDeleteProduct} loading={deletingProduct} className="flex-1">Excluir</Button>
+        </div>
+      </Modal>
+
+      {/* Modal confirmar exclusão cliente */}
+      <Modal isOpen={!!deleteCustomerId} onClose={() => setDeleteCustomerId(null)} title="Excluir Cliente" size="sm">
+        <p className="text-gray-300 text-sm mb-6">Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.</p>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setDeleteCustomerId(null)} className="flex-1">Cancelar</Button>
+          <Button variant="danger" onClick={handleDeleteCustomer} loading={deletingCustomer} className="flex-1">Excluir</Button>
+        </div>
       </Modal>
 
       {/* Modal editar cliente */}
