@@ -66,7 +66,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    await prisma.product.delete({ where: { id: params.id } })
+    await prisma.$transaction([
+      prisma.saleItem.deleteMany({ where: { productId: params.id } }),
+      prisma.stockMovement.deleteMany({ where: { productId: params.id } }),
+      prisma.product.delete({ where: { id: params.id } }),
+    ])
+
     return NextResponse.json({ message: 'Produto removido com sucesso' })
   } catch (error) {
     console.error('[PRODUCT DELETE]', error)

@@ -40,6 +40,7 @@ export default function ReportsPage() {
   const [productError, setProductError] = useState('')
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null)
   const [deletingProduct, setDeletingProduct] = useState(false)
+  const [deleteProductError, setDeleteProductError] = useState('')
 
   // Customer edit state
   const [customerModal, setCustomerModal] = useState(false)
@@ -49,6 +50,7 @@ export default function ReportsPage() {
   const [customerError, setCustomerError] = useState('')
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null)
   const [deletingCustomer, setDeletingCustomer] = useState(false)
+  const [deleteCustomerError, setDeleteCustomerError] = useState('')
 
   async function loadReport() {
     setLoading(true)
@@ -110,8 +112,11 @@ export default function ReportsPage() {
   async function handleDeleteProduct() {
     if (!deleteProductId) return
     setDeletingProduct(true)
+    setDeleteProductError('')
     try {
-      await fetch(`/api/products/${deleteProductId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/products/${deleteProductId}`, { method: 'DELETE' })
+      const d = await res.json()
+      if (!res.ok) { setDeleteProductError(d.error); return }
       setDeleteProductId(null)
       loadReport()
     } finally { setDeletingProduct(false) }
@@ -120,8 +125,11 @@ export default function ReportsPage() {
   async function handleDeleteCustomer() {
     if (!deleteCustomerId) return
     setDeletingCustomer(true)
+    setDeleteCustomerError('')
     try {
-      await fetch(`/api/customers/${deleteCustomerId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/customers/${deleteCustomerId}`, { method: 'DELETE' })
+      const d = await res.json()
+      if (!res.ok) { setDeleteCustomerError(d.error); return }
       setDeleteCustomerId(null)
       loadReport()
     } finally { setDeletingCustomer(false) }
@@ -320,19 +328,21 @@ export default function ReportsPage() {
       </Modal>
 
       {/* Modal confirmar exclusão produto */}
-      <Modal isOpen={!!deleteProductId} onClose={() => setDeleteProductId(null)} title="Excluir Produto" size="sm">
+      <Modal isOpen={!!deleteProductId} onClose={() => { setDeleteProductId(null); setDeleteProductError('') }} title="Excluir Produto" size="sm">
+        {deleteProductError && <div className="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{deleteProductError}</div>}
         <p className="text-gray-300 text-sm mb-6">Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.</p>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setDeleteProductId(null)} className="flex-1">Cancelar</Button>
+          <Button variant="outline" onClick={() => { setDeleteProductId(null); setDeleteProductError('') }} className="flex-1">Cancelar</Button>
           <Button variant="danger" onClick={handleDeleteProduct} loading={deletingProduct} className="flex-1">Excluir</Button>
         </div>
       </Modal>
 
       {/* Modal confirmar exclusão cliente */}
-      <Modal isOpen={!!deleteCustomerId} onClose={() => setDeleteCustomerId(null)} title="Excluir Cliente" size="sm">
+      <Modal isOpen={!!deleteCustomerId} onClose={() => { setDeleteCustomerId(null); setDeleteCustomerError('') }} title="Excluir Cliente" size="sm">
+        {deleteCustomerError && <div className="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{deleteCustomerError}</div>}
         <p className="text-gray-300 text-sm mb-6">Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.</p>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setDeleteCustomerId(null)} className="flex-1">Cancelar</Button>
+          <Button variant="outline" onClick={() => { setDeleteCustomerId(null); setDeleteCustomerError('') }} className="flex-1">Cancelar</Button>
           <Button variant="danger" onClick={handleDeleteCustomer} loading={deletingCustomer} className="flex-1">Excluir</Button>
         </div>
       </Modal>
