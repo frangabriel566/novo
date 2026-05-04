@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
+import Modal from '@/components/ui/Modal'
+import Input from '@/components/ui/Input'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatCurrency } from '@/lib/utils'
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Edit2 } from 'lucide-react'
 
 const PAYMENT_LABELS: Record<string, string> = {
   CASH: 'Dinheiro', CREDIT_CARD: 'Cartão Crédito', DEBIT_CARD: 'Cartão Débito',
@@ -19,6 +21,9 @@ interface ReportData {
   topProducts: any[]; topCustomers: any[]; paymentMethods: any[]; salesByDay: any[]
 }
 
+interface ProductEditForm { name: string; price: string; category: string; quantity: string }
+interface CustomerEditForm { name: string; phone: string; address: string }
+
 export default function ReportsPage() {
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -26,6 +31,20 @@ export default function ReportsPage() {
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
   const [from, setFrom] = useState(firstDay)
   const [to, setTo] = useState(today.toISOString().split('T')[0])
+
+  // Product edit state
+  const [productModal, setProductModal] = useState(false)
+  const [editProduct, setEditProduct] = useState<any>(null)
+  const [productForm, setProductForm] = useState<ProductEditForm>({ name: '', price: '', category: '', quantity: '' })
+  const [savingProduct, setSavingProduct] = useState(false)
+  const [productError, setProductError] = useState('')
+
+  // Customer edit state
+  const [customerModal, setCustomerModal] = useState(false)
+  const [editCustomer, setEditCustomer] = useState<any>(null)
+  const [customerForm, setCustomerForm] = useState<CustomerEditForm>({ name: '', phone: '', address: '' })
+  const [savingCustomer, setSavingCustomer] = useState(false)
+  const [customerError, setCustomerError] = useState('')
 
   async function loadReport() {
     setLoading(true)
@@ -37,6 +56,74 @@ export default function ReportsPage() {
   }
 
   useEffect(() => { loadReport() }, [from, to])
+
+  function openEditProduct(p: any) {
+    setEditProduct(p)
+    setProductForm({
+      name: p.product?.name ?? '',
+      price: String(p.product?.price ?? ''),
+      category: p.product?.category ?? '',
+      quantity: String(p.product?.quantity ?? ''),
+    })
+    setProductError('')
+    setProductModal(true)
+  }
+
+  async function handleSaveProduct(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editProduct?.productId) return
+    setSavingProduct(true)
+    setProductError('')
+    try {
+      const res = await fetch(`/api/products/${editProduct.productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: productForm.name,
+          price: parseFloat(productForm.price),
+          category: productForm.category,
+          quantity: parseInt(productForm.quantity),
+        }),
+      })
+      const d = await res.json()
+      if (!res.ok) { setProductError(d.error); return }
+      setProductModal(false)
+      loadReport()
+    } finally { setSavingProduct(false) }
+  }
+
+  function openEditCustomer(c: any) {
+    setEditCustomer(c)
+    setCustomerForm({
+      name: c.customer?.name ?? '',
+      phone: c.customer?.phone ?? '',
+      address: c.customer?.address ?? '',
+    })
+    setCustomerError('')
+    setCustomerModal(true)
+  }
+
+  async function handleSaveCustomer(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editCustomer?.customerId) return
+    setSavingCustomer(true)
+    setCustomerError('')
+    try {
+      const res = await fetch(`/api/customers/${editCustomer.customerId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: customerForm.name,
+          phone: customerForm.phone || null,
+          address: customerForm.address || null,
+        }),
+      })
+      const d = await res.json()
+      if (!res.ok) { setCustomerError(d.error); return }
+      setCustomerModal(false)
+      loadReport()
+    } finally { setSavingCustomer(false) }
+  }
 
   const summaryCards = data ? [
     { label: 'Receita', value: formatCurrency(data.revenue), icon: DollarSign, color: 'text-amber-400', bg: 'bg-amber-500/10' },
@@ -116,6 +203,13 @@ export default function ReportsPage() {
                           <p className="text-xs text-gray-500">{p._sum.quantity} unidades</p>
                         </div>
                         <span className="text-sm font-semibold text-amber-400">{formatCurrency(p._sum.price * p._sum.quantity)}</span>
+                        {p.productId && (
+                          <button onClick={() => openEditProduct(p)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors shrink-0"
+                            title="Editar produto">
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -137,6 +231,13 @@ export default function ReportsPage() {
                           <p className="text-xs text-gray-500">{c._count} compra(s)</p>
                         </div>
                         <span className="text-sm font-semibold text-emerald-400">{formatCurrency(c._sum.total)}</span>
+                        {c.customerId && (
+                          <button onClick={() => openEditCustomer(c)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors shrink-0"
+                            title="Editar cliente">
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -162,6 +263,37 @@ export default function ReportsPage() {
           </>
         )}
       </div>
+
+      {/* Modal editar produto */}
+      <Modal isOpen={productModal} onClose={() => setProductModal(false)} title="Editar Produto">
+        <form onSubmit={handleSaveProduct} className="space-y-4">
+          {productError && <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{productError}</div>}
+          <Input label="Nome" value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} required />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Preço (R$)" type="number" step="0.01" min="0" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} required />
+            <Input label="Quantidade" type="number" min="0" value={productForm.quantity} onChange={e => setProductForm({ ...productForm, quantity: e.target.value })} required />
+          </div>
+          <Input label="Categoria" value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })} required />
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setProductModal(false)} className="flex-1">Cancelar</Button>
+            <Button type="submit" loading={savingProduct} className="flex-1">Salvar</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal editar cliente */}
+      <Modal isOpen={customerModal} onClose={() => setCustomerModal(false)} title="Editar Cliente">
+        <form onSubmit={handleSaveCustomer} className="space-y-4">
+          {customerError && <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{customerError}</div>}
+          <Input label="Nome" value={customerForm.name} onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })} required />
+          <Input label="Telefone" value={customerForm.phone} onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })} placeholder="(opcional)" />
+          <Input label="Endereço" value={customerForm.address} onChange={e => setCustomerForm({ ...customerForm, address: e.target.value })} placeholder="(opcional)" />
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setCustomerModal(false)} className="flex-1">Cancelar</Button>
+            <Button type="submit" loading={savingCustomer} className="flex-1">Salvar</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

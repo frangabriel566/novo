@@ -24,6 +24,8 @@ async function getDashboardStats() {
       lowStockProducts,
       recentSales,
       salesLast30Days,
+      totalExpensesResult,
+      totalFiadoPaidResult,
     ] = await Promise.all([
       prisma.sale.aggregate({ where: { status: 'COMPLETED' }, _sum: { total: true } }),
       prisma.sale.count(),
@@ -44,6 +46,8 @@ async function getDashboardStats() {
         select: { total: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
       }),
+      prisma.expense.aggregate({ _sum: { amount: true } }),
+      prisma.fiado.aggregate({ where: { status: 'COMPLETED' }, _sum: { amount: true } }),
     ])
 
     const salesByDate: Record<string, { total: number; count: number }> = {}
@@ -61,8 +65,16 @@ async function getDashboardStats() {
       }
     }
 
+    const totalRevenue = totalRevenueResult._sum.total ?? 0
+    const totalExpenses = totalExpensesResult._sum.amount ?? 0
+    const totalFiadoPaid = totalFiadoPaidResult._sum.amount ?? 0
+    const saldo = totalRevenue + totalFiadoPaid - totalExpenses
+
     return {
-      totalRevenue: totalRevenueResult._sum.total ?? 0,
+      totalRevenue,
+      totalExpenses,
+      totalFiadoPaid,
+      saldo,
       totalSales,
       totalProducts,
       totalCustomers,
@@ -91,7 +103,7 @@ export default async function DashboardPage() {
 
       <div className="px-4 lg:px-8 py-6 space-y-6 animate-fade-in">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatsCard title="Receita Total" value={formatCurrency(stats?.totalRevenue ?? 0)} subtitle="Vendas concluídas" icon={DollarSign} color="amber" />
+          <StatsCard title="Saldo da Conta" value={formatCurrency(stats?.saldo ?? 0)} subtitle="Vendas − Despesas + Fiados pagos" icon={DollarSign} color="amber" />
           <StatsCard title="Total de Vendas" value={stats?.totalSales ?? 0} subtitle="Todas as vendas" icon={ShoppingCart} color="blue" />
           <StatsCard title="Produtos" value={stats?.totalProducts ?? 0} subtitle={`${stats?.lowStockProducts ?? 0} com estoque baixo`} icon={Package} color="emerald" />
           <StatsCard title="Clientes" value={stats?.totalCustomers ?? 0} subtitle="Clientes cadastrados" icon={Users} color="rose" />

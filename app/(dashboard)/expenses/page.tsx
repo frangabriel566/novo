@@ -6,12 +6,9 @@ import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
-import Select from '@/components/ui/Select'
 import Textarea from '@/components/ui/Textarea'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatCurrency, formatDate } from '@/lib/utils'
-
-const EXPENSE_CATEGORIES = ['Aluguel','Salários','Marketing','Fornecedores','Utilities','Transporte','Equipamentos','Software','Outros']
 
 interface Expense {
   id: string; description: string; amount: number; category: string
@@ -189,7 +186,7 @@ export default function ExpensesPage() {
             <Input label="Valor (R$)" type="number" step="0.01" min="0" value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} required />
             <Input label="Data" type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} required />
           </div>
-          <Select label="Categoria" value={form.category} onChange={(e) => setForm({...form, category: e.target.value})} options={EXPENSE_CATEGORIES.map(c=>({value:c,label:c}))} placeholder="Selecione..." required />
+          <Input label="Categoria" value={form.category} onChange={(e) => setForm({...form, category: e.target.value})} placeholder="Ex: Aluguel, Salários, Marketing..." required />
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)} className="flex-1">Cancelar</Button>
             <Button type="submit" loading={saving} className="flex-1">{editExpense ? 'Salvar' : 'Criar'}</Button>
