@@ -1,0 +1,173 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             String          @id @default(cuid())
+  name           String
+  email          String          @unique
+  password       String
+  role           Role            @default(USER)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  sales          Sale[]
+  expenses       Expense[]
+  stockMovements StockMovement[]
+  activities     Activity[]
+  fiados         Fiado[]
+
+  @@map("users")
+}
+
+model Product {
+  id             String          @id @default(cuid())
+  name           String
+  description    String?
+  costPrice      Float           @default(0)
+  price          Float
+  quantity       Int             @default(0)
+  category       String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  saleItems      SaleItem[]
+  stockMovements StockMovement[]
+
+  @@map("products")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sales     Sale[]
+
+  @@map("customers")
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  total         Float
+  discount      Float         @default(0)
+  status        SaleStatus    @default(COMPLETED)
+  notes         String?
+  paymentMethod PaymentMethod @default(CASH)
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  items         SaleItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  price     Float
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id])
+
+  @@map("sale_items")
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  description String
+  amount      Float
+  category    String
+  date        DateTime        @default(now())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("expenses")
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  type      StockMovementType
+  quantity  Int
+  reason    String?
+  productId String
+  product   Product           @relation(fields: [productId], references: [id])
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  createdAt DateTime          @default(now())
+
+  @@map("stock_movements")
+}
+
+model Fiado {
+  id           String      @id @default(cuid())
+  customerName String
+  amount       Float
+  description  String?
+  status       FiadoStatus @default(PENDING)
+  paidAt       DateTime?
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("fiados")
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@map("activities")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SaleStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  PIX
+  BANK_TRANSFER
+  OTHER
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+enum FiadoStatus {
+  PENDING
+  COMPLETED
+}
