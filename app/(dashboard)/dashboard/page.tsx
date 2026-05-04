@@ -35,10 +35,14 @@ async function getDashboardStats() {
       prisma.sale.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
-        include: {
-          customer: true,
-          user: { select: { id: true, name: true } },
-          items: { include: { product: true } },
+        select: {
+          id: true,
+          total: true,
+          status: true,
+          paymentMethod: true,
+          createdAt: true,
+          customer: { select: { name: true } },
+          items: { select: { quantity: true, price: true, product: { select: { name: true } } } },
         },
       }),
       prisma.sale.findMany({
