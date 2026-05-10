@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { DollarSign, ShoppingCart, Package, Users, AlertTriangle, TrendingUp, TrendingDown, Wallet } from 'lucide-react'
+import { ShoppingCart, Package, Users, AlertTriangle, Wallet, TrendingUp, TrendingDown } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import StatsCard from '@/components/dashboard/StatsCard'
 import SalesChart from '@/components/dashboard/SalesChart'
@@ -75,7 +75,7 @@ async function getDashboardStats() {
     const totalExpenses = totalExpensesResult._sum.amount ?? 0
     const totalFiadoPaid = totalFiadoPaidResult._sum.amount ?? 0
     const saldoAjuste = saldoAjusteSetting ? parseFloat(saldoAjusteSetting.value) : 0
-    const saldo = totalRevenue - totalExpenses + saldoAjuste
+    const saldo = totalRevenue - totalExpenses
 
     return {
       totalRevenue,
@@ -126,15 +126,9 @@ export default async function DashboardPage() {
             </p>
             <div className="mt-4 space-y-1.5 border-t border-gray-800 pt-4">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-emerald-400" /> Receita vendas</span>
+                <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-emerald-400" /> Vendas</span>
                 <span className="text-emerald-400 font-medium">+{formatCurrency(stats?.totalRevenue ?? 0)}</span>
               </div>
-{(stats?.saldoAjuste ?? 0) !== 0 && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-purple-400" /> Ajuste de saldo</span>
-                  <span className="text-purple-400 font-medium">{(stats?.saldoAjuste ?? 0) >= 0 ? '+' : ''}{formatCurrency(stats?.saldoAjuste ?? 0)}</span>
-                </div>
-              )}
               {(stats?.totalExpenses ?? 0) > 0 && (
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500 flex items-center gap-1"><TrendingDown className="w-3 h-3 text-rose-400" /> Despesas</span>

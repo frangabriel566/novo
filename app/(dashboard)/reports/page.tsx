@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
@@ -8,7 +8,7 @@ import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatCurrency } from '@/lib/utils'
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Edit2, Trash2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Edit2, Trash2, Receipt, CreditCard } from 'lucide-react'
 
 const PAYMENT_LABELS: Record<string, string> = {
   CASH: 'Dinheiro', CREDIT_CARD: 'Cartão Crédito', DEBIT_CARD: 'Cartão Débito',
@@ -18,19 +18,26 @@ const PIE_COLORS = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#f97316']
 
 interface ReportData {
   revenue: number; totalSales: number; totalExpenses: number; profit: number
-  topProducts: any[]; topCustomers: any[]; paymentMethods: any[]; salesByDay: any[]
+  topProducts: { productId: string; product: any; _sum: { quantity: number }; revenue: number }[]
+  topCustomers: any[]; paymentMethods: any[]; salesByDay: any[]
+  expensesList: { id: string; description: string; amount: number; category: string; date: string }[]
+  salesList: { id: string; total: number; paymentMethod: string; createdAt: string; customer: { name: string }; items: any[] }[]
 }
 
 interface ProductEditForm { name: string; price: string; category: string; quantity: string }
 interface CustomerEditForm { name: string; phone: string; address: string }
 
+function startOfDay(d: Date) { const r = new Date(d); r.setHours(0, 0, 0, 0); return r.toISOString() }
+function endOfDay(d: Date) { const r = new Date(d); r.setHours(23, 59, 59, 999); return r.toISOString() }
+function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d }
+function monthsAgo(n: number) { const d = new Date(); d.setMonth(d.getMonth() - n); return d }
+
 export default function ReportsPage() {
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
-  const today = new Date()
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
-  const [from, setFrom] = useState(firstDay)
-  const [to, setTo] = useState(today.toISOString().split('T')[0])
+  const [from, setFrom] = useState(() => startOfDay(monthsAgo(1)))
+  const [to, setTo] = useState(() => endOfDay(new Date()))
+  const [activeFilter, setActiveFilter] = useState<string | null>('1mes')
 
   // Product edit state
   const [productModal, setProductModal] = useState(false)
@@ -52,27 +59,43 @@ export default function ReportsPage() {
   const [deletingCustomer, setDeletingCustomer] = useState(false)
   const [deleteCustomerError, setDeleteCustomerError] = useState('')
 
-  async function loadReport() {
+  const loadReport = useCallback(async (f: string, t: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/reports?from=${from}&to=${to}`)
+      const res = await fetch(`/api/reports?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`)
       const d = await res.json()
-      setData(d.data)
-    } finally { setLoading(false) }
+      setData(d.data ?? null)
+    } catch {
+      setData(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadReport(from, to) }, [from, to, loadReport])
+
+  function applyFilter(id: string, f: string, t: string) {
+    setActiveFilter(id)
+    setFrom(f)
+    setTo(t)
   }
 
-  useEffect(() => { loadReport() }, [from, to])
-
-  function openEditProduct(p: any) {
+  async function openEditProduct(p: any) {
     setEditProduct(p)
-    setProductForm({
-      name: p.product?.name ?? '',
-      price: String(p.product?.price ?? ''),
-      category: p.product?.category ?? '',
-      quantity: String(p.product?.quantity ?? ''),
-    })
     setProductError('')
     setProductModal(true)
+    try {
+      const res = await fetch(`/api/products/${p.productId}`)
+      const d = await res.json()
+      if (d.data) {
+        setProductForm({
+          name: d.data.name ?? '',
+          price: String(d.data.price ?? ''),
+          category: d.data.category ?? '',
+          quantity: String(d.data.quantity ?? ''),
+        })
+      }
+    } catch {}
   }
 
   async function handleSaveProduct(e: React.FormEvent) {
@@ -94,7 +117,7 @@ export default function ReportsPage() {
       const d = await res.json()
       if (!res.ok) { setProductError(d.error); return }
       setProductModal(false)
-      loadReport()
+      loadReport(from, to)
     } finally { setSavingProduct(false) }
   }
 
@@ -118,7 +141,7 @@ export default function ReportsPage() {
       const d = await res.json()
       if (!res.ok) { setDeleteProductError(d.error); return }
       setDeleteProductId(null)
-      loadReport()
+      loadReport(from, to)
     } finally { setDeletingProduct(false) }
   }
 
@@ -131,7 +154,7 @@ export default function ReportsPage() {
       const d = await res.json()
       if (!res.ok) { setDeleteCustomerError(d.error); return }
       setDeleteCustomerId(null)
-      loadReport()
+      loadReport(from, to)
     } finally { setDeletingCustomer(false) }
   }
 
@@ -153,7 +176,7 @@ export default function ReportsPage() {
       const d = await res.json()
       if (!res.ok) { setCustomerError(d.error); return }
       setCustomerModal(false)
-      loadReport()
+      loadReport(from, to)
     } finally { setSavingCustomer(false) }
   }
 
@@ -170,25 +193,24 @@ export default function ReportsPage() {
 
       <div className="px-8 py-6 space-y-6 animate-fade-in">
         {/* Date filters */}
-        <div className="flex items-center gap-4 bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-400">De</label>
-              <input type="date" value={from} onChange={e => setFrom(e.target.value)}
-                className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-400">Até</label>
-              <input type="date" value={to} onChange={e => setTo(e.target.value)}
-                className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
-            </div>
-          </div>
+        <div className="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-2xl p-4">
           {[
-            { label: 'Este mês', fn: () => { setFrom(firstDay); setTo(today.toISOString().split('T')[0]) } },
-            { label: 'Últimos 7 dias', fn: () => { const d = new Date(); d.setDate(d.getDate()-7); setFrom(d.toISOString().split('T')[0]); setTo(today.toISOString().split('T')[0]) } },
-            { label: 'Este ano', fn: () => { setFrom(`${today.getFullYear()}-01-01`); setTo(today.toISOString().split('T')[0]) } },
+            { id: 'hoje',   label: 'Hoje',   f: () => startOfDay(new Date()),    t: () => endOfDay(new Date()) },
+            { id: '3dias',  label: '3 dias',  f: () => startOfDay(daysAgo(3)),   t: () => endOfDay(new Date()) },
+            { id: '15dias', label: '15 dias', f: () => startOfDay(daysAgo(15)),  t: () => endOfDay(new Date()) },
+            { id: '1mes',   label: '1 mês',   f: () => startOfDay(monthsAgo(1)), t: () => endOfDay(new Date()) },
           ].map(b => (
-            <Button key={b.label} variant="outline" size="sm" onClick={b.fn}>{b.label}</Button>
+            <button
+              key={b.id}
+              onClick={() => applyFilter(b.id, b.f(), b.t())}
+              className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                activeFilter === b.id
+                  ? 'bg-amber-500 text-gray-900'
+                  : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              {b.label}
+            </button>
           ))}
         </div>
 
@@ -234,7 +256,7 @@ export default function ReportsPage() {
                           <p className="text-sm font-medium text-white truncate">{p.product?.name ?? 'Produto'}</p>
                           <p className="text-xs text-gray-500">{p._sum.quantity} unidades</p>
                         </div>
-                        <span className="text-sm font-semibold text-amber-400">{formatCurrency(p._sum.price * p._sum.quantity)}</span>
+                        <span className="text-sm font-semibold text-amber-400">{formatCurrency(p.revenue)}</span>
                         {p.productId && (
                           <div className="flex items-center gap-1 shrink-0">
                             <button onClick={() => openEditProduct(p)}
@@ -305,6 +327,71 @@ export default function ReportsPage() {
                   </ResponsiveContainer>
                 )}
               </div>
+            </div>
+
+            {/* Vendas Realizadas + Despesas */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+              {/* Vendas realizadas */}
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-2 rounded-xl bg-emerald-500/10"><ShoppingCart className="w-4 h-4 text-emerald-400" /></div>
+                  <h3 className="text-base font-semibold text-white">Vendas Realizadas</h3>
+                  <span className="ml-auto text-xs text-gray-500">{data.salesList.length} venda(s)</span>
+                </div>
+                {data.salesList.length === 0 ? (
+                  <p className="text-gray-500 text-sm text-center py-8">Nenhuma venda no período</p>
+                ) : (
+                  <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    {data.salesList.map((s) => (
+                      <div key={s.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-gray-800/60">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{s.customer.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {PAYMENT_LABELS[s.paymentMethod] ?? s.paymentMethod} · {new Date(s.createdAt).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <span className="text-sm font-semibold text-emerald-400 shrink-0 ml-3">+{formatCurrency(s.total)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between text-sm">
+                  <span className="text-gray-400">Total</span>
+                  <span className="font-bold text-emerald-400">{formatCurrency(data.revenue)}</span>
+                </div>
+              </div>
+
+              {/* Despesas */}
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-2 rounded-xl bg-rose-500/10"><Receipt className="w-4 h-4 text-rose-400" /></div>
+                  <h3 className="text-base font-semibold text-white">Contas / Despesas</h3>
+                  <span className="ml-auto text-xs text-gray-500">{data.expensesList.length} lançamento(s)</span>
+                </div>
+                {data.expensesList.length === 0 ? (
+                  <p className="text-gray-500 text-sm text-center py-8">Nenhuma despesa no período</p>
+                ) : (
+                  <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    {data.expensesList.map((e) => (
+                      <div key={e.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-gray-800/60">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{e.description}</p>
+                          <p className="text-xs text-gray-500">
+                            {e.category} · {new Date(e.date).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <span className="text-sm font-semibold text-rose-400 shrink-0 ml-3">−{formatCurrency(e.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between text-sm">
+                  <span className="text-gray-400">Total</span>
+                  <span className="font-bold text-rose-400">{formatCurrency(data.totalExpenses)}</span>
+                </div>
+              </div>
+
             </div>
           </>
         )}

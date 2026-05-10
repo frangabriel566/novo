@@ -79,29 +79,35 @@ export async function POST(request: NextRequest) {
 
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
     const total = Math.max(0, subtotal - discount)
+    const saleId = crypto.randomUUID()
 
-    const sale = await prisma.$transaction(async (tx) => {
-      const newSale = await tx.sale.create({
+    await prisma.$transaction([
+      prisma.sale.create({
         data: {
+          id: saleId,
           total, discount, status, notes, paymentMethod, customerId,
           userId: authUser.userId,
           items: { create: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })) },
         },
-        include: {
-          customer: true,
-          user: { select: { id: true, name: true, email: true } },
-          items: { include: { product: true } },
-        },
-      })
+      }),
+      ...items.flatMap(item => [
+        prisma.product.update({
+          where: { id: item.productId },
+          data: { quantity: { decrement: item.quantity } },
+        }),
+        prisma.stockMovement.create({
+          data: { productId: item.productId, type: 'OUT', quantity: item.quantity, reason: `Venda #${saleId.slice(-6)}`, userId: authUser.userId },
+        }),
+      ]),
+    ])
 
-      for (const item of items) {
-        await tx.product.update({ where: { id: item.productId }, data: { quantity: { decrement: item.quantity } } })
-        await tx.stockMovement.create({
-          data: { productId: item.productId, type: 'OUT', quantity: item.quantity, reason: `Venda #${newSale.id.slice(-6)}`, userId: authUser.userId },
-        })
-      }
-
-      return newSale
+    const sale = await prisma.sale.findUnique({
+      where: { id: saleId },
+      include: {
+        customer: true,
+        user: { select: { id: true, name: true, email: true } },
+        items: { include: { product: true } },
+      },
     })
 
     return NextResponse.json({ data: sale }, { status: 201 })
