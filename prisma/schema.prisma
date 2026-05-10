@@ -32,7 +32,8 @@ model Product {
   description    String?
   costPrice      Float           @default(0)
   price          Float
-  quantity       Int             @default(0)
+  quantity            Int             @default(0)
+  lowStockThreshold   Int             @default(5)
   category       String
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt

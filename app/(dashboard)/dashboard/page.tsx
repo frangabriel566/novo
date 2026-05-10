@@ -75,7 +75,7 @@ async function getDashboardStats() {
     const totalExpenses = totalExpensesResult._sum.amount ?? 0
     const totalFiadoPaid = totalFiadoPaidResult._sum.amount ?? 0
     const saldoAjuste = saldoAjusteSetting ? parseFloat(saldoAjusteSetting.value) : 0
-    const saldo = totalRevenue + totalFiadoPaid - totalExpenses + saldoAjuste
+    const saldo = totalRevenue - totalExpenses + saldoAjuste
 
     return {
       totalRevenue,
@@ -129,13 +129,7 @@ export default async function DashboardPage() {
                 <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-emerald-400" /> Receita vendas</span>
                 <span className="text-emerald-400 font-medium">+{formatCurrency(stats?.totalRevenue ?? 0)}</span>
               </div>
-              {(stats?.totalFiadoPaid ?? 0) > 0 && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-blue-400" /> Fiados recebidos</span>
-                  <span className="text-blue-400 font-medium">+{formatCurrency(stats?.totalFiadoPaid ?? 0)}</span>
-                </div>
-              )}
-              {(stats?.saldoAjuste ?? 0) !== 0 && (
+{(stats?.saldoAjuste ?? 0) !== 0 && (
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-purple-400" /> Ajuste de saldo</span>
                   <span className="text-purple-400 font-medium">{(stats?.saldoAjuste ?? 0) >= 0 ? '+' : ''}{formatCurrency(stats?.saldoAjuste ?? 0)}</span>
@@ -162,7 +156,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
             <p className="text-sm text-amber-300">
-              <span className="font-semibold">{stats?.lowStockProducts} produto(s)</span> com estoque baixo (menos de 10 unidades).{' '}
+              <span className="font-semibold">{stats?.lowStockProducts} produto(s)</span> com estoque abaixo do mínimo configurado.{' '}
               <a href="/products" className="underline hover:no-underline">Ver produtos</a>
             </p>
           </div>

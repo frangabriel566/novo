@@ -61,6 +61,7 @@ export default function ProductForm({ product, onSuccess, onCancel }: ProductFor
   const [category, setCategory] = useState(product?.category ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [quantity, setQuantity] = useState(product?.quantity ?? 0)
+  const [lowStockThreshold, setLowStockThreshold] = useState(product?.lowStockThreshold ?? 5)
   // preços em centavos para evitar problemas de float
   const [costCents, setCostCents] = useState(Math.round((product?.costPrice ?? 0) * 100))
   const [priceCents, setPriceCents] = useState(Math.round((product?.price ?? 0) * 100))
@@ -91,7 +92,7 @@ export default function ProductForm({ product, onSuccess, onCancel }: ProductFor
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, costPrice, price, quantity: Number(quantity), category }),
+        body: JSON.stringify({ name, description, costPrice, price, quantity: Number(quantity), lowStockThreshold: Number(lowStockThreshold), category }),
       })
 
       const data = await res.json()
@@ -149,15 +150,25 @@ export default function ProductForm({ product, onSuccess, onCancel }: ProductFor
         </div>
       )}
 
-      <Input
-        label="Quantidade em estoque"
-        type="number"
-        min="0"
-        value={quantity === 0 ? '' : quantity}
-        onChange={e => setQuantity(Number(e.target.value) || 0)}
-        placeholder="0"
-        required
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          label="Quantidade em estoque"
+          type="number"
+          min="0"
+          value={quantity === 0 ? '' : quantity}
+          onChange={e => setQuantity(Number(e.target.value) || 0)}
+          placeholder="0"
+          required
+        />
+        <Input
+          label="Alerta de estoque baixo"
+          type="number"
+          min="0"
+          value={lowStockThreshold === 0 ? '' : lowStockThreshold}
+          onChange={e => setLowStockThreshold(Number(e.target.value) || 0)}
+          placeholder="5"
+        />
+      </div>
 
       <Textarea
         label="Descrição (opcional)"

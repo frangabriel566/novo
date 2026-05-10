@@ -14,6 +14,7 @@ export interface Product {
   costPrice: number
   price: number
   quantity: number
+  lowStockThreshold: number
   category: string
   createdAt: string
   updatedAt: string

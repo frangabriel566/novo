@@ -9,6 +9,7 @@ const productSchema = z.object({
   costPrice: z.number().min(0).default(0),
   price: z.number().positive('Preço de venda deve ser positivo'),
   quantity: z.number().int().min(0, 'Quantidade não pode ser negativa'),
+  lowStockThreshold: z.number().int().min(0).default(5),
   category: z.string().min(1, 'Categoria é obrigatória'),
 })
 

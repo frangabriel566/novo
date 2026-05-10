@@ -4,12 +4,9 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const [lowStockProducts, pendingSales, recentSales] = await Promise.all([
-      prisma.product.findMany({
-        where: { quantity: { lt: 10 } },
-        select: { id: true, name: true, quantity: true },
-        orderBy: { quantity: 'asc' },
-        take: 5,
-      }),
+      prisma.$queryRaw<{ id: string; name: string; quantity: number }[]>`
+        SELECT id, name, quantity FROM products WHERE quantity < "lowStockThreshold" ORDER BY quantity ASC LIMIT 5
+      `,
       prisma.sale.findMany({
         where: { status: 'PENDING' },
         select: { id: true, total: true, customer: { select: { name: true } }, createdAt: true },

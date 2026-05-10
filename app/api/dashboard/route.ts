@@ -22,7 +22,7 @@ export async function GET() {
       prisma.sale.count(),
       prisma.product.count(),
       prisma.customer.count(),
-      prisma.product.count({ where: { quantity: { lt: 10 } } }),
+      prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) as count FROM products WHERE quantity < "lowStockThreshold"`,
       prisma.sale.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
@@ -72,7 +72,7 @@ export async function GET() {
         totalSales,
         totalProducts,
         totalCustomers,
-        lowStockProducts,
+        lowStockProducts: Number(lowStockProducts[0].count),
         recentSales,
         salesChartData,
       },
