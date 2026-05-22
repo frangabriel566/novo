@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, ShoppingCart, Eye, Trash2, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { Plus, Search, ShoppingCart, Eye, Trash2, CheckCircle, Clock, XCircle, BadgeCheck } from 'lucide-react'
 import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
@@ -21,6 +21,8 @@ export default function SalesPage() {
   const [viewSale, setViewSale] = useState<Sale | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [completeId, setCompleteId] = useState<string | null>(null)
+  const [completing, setCompleting] = useState(false)
 
   const pageSize = 10
 
@@ -48,6 +50,20 @@ export default function SalesPage() {
       setDeleteId(null)
       loadSales()
     } finally { setDeleting(false) }
+  }
+
+  async function handleComplete() {
+    if (!completeId) return
+    setCompleting(true)
+    try {
+      await fetch(`/api/sales/${completeId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'COMPLETED' }),
+      })
+      setCompleteId(null)
+      loadSales()
+    } finally { setCompleting(false) }
   }
 
   const totalPages = Math.ceil(total / pageSize)
@@ -111,6 +127,13 @@ export default function SalesPage() {
                         className="p-2 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
                         <Eye className="w-4 h-4" />
                       </button>
+                      {sale.status === 'PENDING' && (
+                        <button onClick={() => setCompleteId(sale.id)}
+                          title="Dar Baixa"
+                          className="p-2 rounded-lg text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+                          <BadgeCheck className="w-4 h-4" />
+                        </button>
+                      )}
                       <button onClick={() => setDeleteId(sale.id)}
                         className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
                         <Trash2 className="w-4 h-4" />
@@ -154,6 +177,9 @@ export default function SalesPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button onClick={() => setViewSale(sale)} className="p-2 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"><Eye className="w-4 h-4" /></button>
+                          {sale.status === 'PENDING' && (
+                            <button onClick={() => setCompleteId(sale.id)} title="Dar Baixa" className="p-2 rounded-lg text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"><BadgeCheck className="w-4 h-4" /></button>
+                          )}
                           <button onClick={() => setDeleteId(sale.id)} className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
@@ -213,6 +239,17 @@ export default function SalesPage() {
               </div>
             )}
             <p className="text-xs text-gray-500 text-right">Criada em {formatDateTime(viewSale.createdAt)} por {viewSale.user.name}</p>
+            {viewSale.status === 'PENDING' && (
+              <div className="pt-2 border-t border-gray-800">
+                <Button
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+                  onClick={() => { setViewSale(null); setCompleteId(viewSale.id) }}
+                >
+                  <BadgeCheck className="w-4 h-4" />
+                  Dar Baixa — Marcar como Concluído
+                </Button>
+              </div>
+            )}
           </div>
         </Modal>
       )}
@@ -222,6 +259,22 @@ export default function SalesPage() {
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => setDeleteId(null)} className="flex-1">Cancelar</Button>
           <Button variant="danger" onClick={handleDelete} loading={deleting} className="flex-1">Remover</Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={!!completeId} onClose={() => setCompleteId(null)} title="Dar Baixa na Venda" size="sm">
+        <div className="flex flex-col items-center gap-4 py-2">
+          <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+            <BadgeCheck className="w-7 h-7 text-emerald-400" />
+          </div>
+          <p className="text-gray-300 text-sm text-center">Confirmar pagamento e marcar esta venda como <span className="text-emerald-400 font-semibold">Concluída</span>?</p>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <Button variant="outline" onClick={() => setCompleteId(null)} className="flex-1">Cancelar</Button>
+          <Button onClick={handleComplete} loading={completing} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white">
+            <BadgeCheck className="w-4 h-4" />
+            Confirmar Pagamento
+          </Button>
         </div>
       </Modal>
     </div>
