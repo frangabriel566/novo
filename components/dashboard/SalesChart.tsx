@@ -52,6 +52,9 @@ export default function SalesChart({ data }: SalesChartProps) {
     }),
   }))
 
+  const maxValue = Math.max(...formattedData.map((d) => d.total), 0)
+  const yMax = maxValue > 0 ? Math.ceil(maxValue * 1.2) : 100
+
   // Show only every 5th label to avoid crowding
   const tickFormatter = (_: string, index: number) =>
     index % 5 === 0 ? formattedData[index]?.label ?? '' : ''
@@ -81,13 +84,14 @@ export default function SalesChart({ data }: SalesChartProps) {
             tickLine={false}
           />
           <YAxis
+            domain={[0, yMax]}
             tickFormatter={(v) =>
-              v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`
+              v >= 1000 ? `R$${(v / 1000).toFixed(1).replace(/\.0$/, '')}k` : `R$${v}`
             }
             tick={{ fill: '#6b7280', fontSize: 12 }}
             axisLine={false}
             tickLine={false}
-            width={55}
+            width={60}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area
