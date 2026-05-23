@@ -53,7 +53,7 @@ export default function SalesChart({ data }: SalesChartProps) {
   }))
 
   const maxValue = Math.max(...formattedData.map((d) => d.total), 0)
-  const yMax = maxValue > 0 ? Math.ceil(maxValue * 1.2) : 100
+  const yMax = maxValue > 0 ? Math.ceil(maxValue * 1.5) : 100
 
   // Show only every 5th label to avoid crowding
   const tickFormatter = (_: string, index: number) =>
