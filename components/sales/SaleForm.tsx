@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Trash2, Package, Search } from 'lucide-react'
+import { Plus, Trash2, Package, Search, Banknote, ArrowLeftRight } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
@@ -114,6 +114,7 @@ export default function SaleForm() {
   const [selectedProductId, setSelectedProductId] = useState('')
   const [selectedQty, setSelectedQty] = useState(1)
   const [discountCents, setDiscountCents] = useState(0)
+  const [cashReceivedCents, setCashReceivedCents] = useState(0)
   const [productSearch, setProductSearch] = useState('')
   const [showProductList, setShowProductList] = useState(false)
   const productSearchRef = useRef<HTMLDivElement>(null)
@@ -186,6 +187,14 @@ export default function SaleForm() {
     setDiscountCents(parseInt(digits || '0', 10))
   }
 
+  function handleCashReceivedChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '')
+    setCashReceivedCents(parseInt(digits || '0', 10))
+  }
+
+  const cashReceived = cashReceivedCents / 100
+  const troco = cashReceived - total
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!customerId) { setError('Selecione um cliente'); return }
@@ -235,6 +244,45 @@ export default function SaleForm() {
             options={[{ value: 'COMPLETED', label: 'Concluída' }, { value: 'PENDING', label: 'Pendente' }]} />
           <Select label="Forma de Pagamento" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} options={PAYMENT_OPTIONS} />
         </div>
+
+        {/* Valor recebido + troco — só aparece no Dinheiro */}
+        {paymentMethod === 'CASH' && (
+          <div className="space-y-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                <Banknote className="w-4 h-4 text-emerald-400" />
+                Valor recebido do cliente (R$)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">R$</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={centsToDisplay(cashReceivedCents)}
+                  onChange={handleCashReceivedChange}
+                  placeholder="0,00"
+                  className="w-full pl-10 pr-3 py-2.5 rounded-lg text-sm bg-gray-800 border border-gray-600 hover:border-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            {cashReceivedCents > 0 && (
+              <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                troco >= 0
+                  ? 'bg-emerald-500/10 border-emerald-500/30'
+                  : 'bg-red-500/10 border-red-500/30'
+              }`}>
+                <span className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                  <ArrowLeftRight className={`w-4 h-4 ${troco >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />
+                  Troco
+                </span>
+                <span className={`text-xl font-bold ${troco >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {troco >= 0 ? formatCurrency(troco) : `- ${formatCurrency(Math.abs(troco))} faltando`}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-gray-300">Desconto (R$)</label>
@@ -338,6 +386,17 @@ export default function SaleForm() {
                 <span className="text-sm text-gray-400">Total</span>
                 <span className="text-3xl font-bold text-amber-400">{formatCurrency(total)}</span>
               </div>
+              {paymentMethod === 'CASH' && cashReceivedCents > 0 && (
+                <div className={`flex items-center justify-between gap-8 pt-2 ${troco >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <span className="text-sm font-semibold flex items-center gap-1.5">
+                    <ArrowLeftRight className="w-4 h-4" />
+                    Troco
+                  </span>
+                  <span className="text-xl font-bold">
+                    {troco >= 0 ? formatCurrency(troco) : `Falta ${formatCurrency(Math.abs(troco))}`}
+                  </span>
+                </div>
+              )}
               <p className="text-xs text-gray-500">{items.length} produto(s) • {items.reduce((s, i) => s + i.quantity, 0)} unidades</p>
             </div>
             <Button type="submit" loading={loading} size="lg" className="w-full sm:w-auto">Finalizar Venda</Button>
