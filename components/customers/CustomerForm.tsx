@@ -18,6 +18,9 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
     name: customer?.name ?? '',
     phone: customer?.phone ?? '',
     address: customer?.address ?? '',
+    birthDate: customer?.birthDate
+      ? new Date(customer.birthDate).toISOString().split('T')[0]
+      : '',
   })
 
   function handleChange(field: keyof CustomerFormData, value: string) {
@@ -37,7 +40,7 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, birthDate: form.birthDate || null }),
       })
 
       const data = await res.json()
@@ -72,11 +75,11 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
       />
 
       <Input
-        label="Telefone"
+        label="Telefone (WhatsApp)"
         type="tel"
         value={form.phone}
         onChange={(e) => handleChange('phone', e.target.value)}
-        placeholder="(11) 99999-9999"
+        placeholder="(86) 99999-9999"
       />
 
       <Input
@@ -85,6 +88,20 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
         onChange={(e) => handleChange('address', e.target.value)}
         placeholder="Teresina"
       />
+
+      <div className="space-y-1">
+        <label className="block text-sm font-medium text-gray-300">
+          Data de aniversário
+          <span className="ml-1 text-xs text-gray-500">(opcional)</span>
+        </label>
+        <input
+          type="date"
+          value={form.birthDate ?? ''}
+          onChange={(e) => handleChange('birthDate', e.target.value)}
+          className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors [color-scheme:dark]"
+        />
+        <p className="text-xs text-gray-500">🎂 Cadastre para receber alerta e enviar desconto via WhatsApp no aniversário</p>
+      </div>
 
       <div className="flex gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} className="flex-1">

@@ -1,14 +1,29 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Edit2, Trash2, Users, Phone } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Users, Phone, Cake, Trophy } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import CustomerForm from '@/components/customers/CustomerForm'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
-import { Customer } from '@/types'
-import { formatDate } from '@/lib/utils'
+import { Customer, GoalSettings } from '@/types'
+import { formatCurrency, formatDate } from '@/lib/utils'
+
+function isBirthdaySoon(birthDate: string | null | undefined) {
+  if (!birthDate) return { today: false, soon: false, label: '' }
+  const bd = new Date(birthDate)
+  const now = new Date()
+  const bMonth = bd.getMonth() + 1
+  const bDay = bd.getDate()
+  if (bMonth === now.getMonth() + 1 && bDay === now.getDate()) return { today: true, soon: false, label: 'Hoje!' }
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(now)
+    d.setDate(now.getDate() + i)
+    if (bMonth === d.getMonth() + 1 && bDay === d.getDate()) return { today: false, soon: true, label: `${i}d` }
+  }
+  return { today: false, soon: false, label: '' }
+}
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -20,13 +35,14 @@ export default function CustomersPage() {
   const [editCustomer, setEditCustomer] = useState<Customer | undefined>()
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [goal, setGoal] = useState<GoalSettings | null>(null)
 
   const pageSize = 10
 
   const loadCustomers = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({ search, page: String(page), pageSize: String(pageSize) })
+      const params = new URLSearchParams({ search, page: String(page), pageSize: String(pageSize), withPurchases: 'true' })
       const res = await fetch(`/api/customers?${params}`)
       const data = await res.json()
       setCustomers(data.data ?? [])
@@ -38,6 +54,10 @@ export default function CustomersPage() {
     const timer = setTimeout(loadCustomers, 300)
     return () => clearTimeout(timer)
   }, [loadCustomers])
+
+  useEffect(() => {
+    fetch('/api/settings/goal').then(r => r.json()).then(setGoal).catch(() => {})
+  }, [])
 
   function openCreate() { setEditCustomer(undefined); setModalOpen(true) }
   function openEdit(customer: Customer) { setEditCustomer(customer); setModalOpen(true) }
@@ -53,6 +73,27 @@ export default function CustomersPage() {
   }
 
   const totalPages = Math.ceil(total / pageSize)
+
+  function GoalBar({ customer }: { customer: Customer }) {
+    if (!goal?.enabled || !goal.amount) return null
+    const spent = customer.totalPurchases ?? 0
+    if (spent === 0) return null
+    const pct = Math.min((spent / goal.amount) * 100, 100)
+    const reached = pct >= 100
+    return (
+      <div className="mt-1">
+        <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full ${reached ? 'bg-amber-400' : 'bg-amber-500/60'}`} style={{ width: `${pct}%` }} />
+        </div>
+        <p className="text-xs mt-0.5 flex items-center gap-1">
+          {reached
+            ? <span className="text-amber-400 font-semibold flex items-center gap-1"><Trophy className="w-3 h-3" />Ganhou {goal.prize}! 🎉</span>
+            : <span className="text-gray-500">{formatCurrency(spent)} / {formatCurrency(goal.amount)}</span>
+          }
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -82,35 +123,43 @@ export default function CustomersPage() {
             <>
               {/* Mobile cards */}
               <div className="sm:hidden divide-y divide-gray-800">
-                {customers.map((customer) => (
-                  <div key={customer.id} className="px-4 py-3 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0">
-                      {customer.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{customer.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {customer.phone && (
-                          <span className="flex items-center gap-1 text-xs text-gray-400">
-                            <Phone className="w-3 h-3" />{customer.phone}
-                          </span>
-                        )}
-                        {customer.address && <span className="text-xs text-gray-500">{customer.address}</span>}
+                {customers.map((customer) => {
+                  const bday = isBirthdaySoon(customer.birthDate)
+                  return (
+                    <div key={customer.id} className="px-4 py-3 flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0 mt-0.5">
+                        {customer.name.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-xs text-amber-400">{customer._count?.sales ?? 0} compra(s)</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-white truncate">{customer.name}</p>
+                          {bday.today && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-pink-500/10 border border-pink-500/30 text-pink-400">
+                              <Cake className="w-3 h-3" />Hoje!
+                            </span>
+                          )}
+                          {!bday.today && bday.soon && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs bg-pink-500/10 border border-pink-500/20 text-pink-300">
+                              <Cake className="w-3 h-3" />{bday.label}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {customer.phone && (
+                            <span className="flex items-center gap-1 text-xs text-gray-400"><Phone className="w-3 h-3" />{customer.phone}</span>
+                          )}
+                          {customer.address && <span className="text-xs text-gray-500">{customer.address}</span>}
+                        </div>
+                        <span className="text-xs text-amber-400">{customer._count?.sales ?? 0} compra(s)</span>
+                        <GoalBar customer={customer} />
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => openEdit(customer)} className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteId(customer.id)} className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => openEdit(customer)}
-                        className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => setDeleteId(customer.id)}
-                        className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Desktop table */}
@@ -120,41 +169,78 @@ export default function CustomersPage() {
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Cliente</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Contato</th>
                     <th className="text-center px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Compras</th>
+                    {goal?.enabled && <th className="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Meta — {goal.prize}</th>}
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Cadastro</th>
                     <th className="text-right px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {customers.map((customer) => (
-                    <tr key={customer.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">
-                            {customer.name.charAt(0).toUpperCase()}
+                  {customers.map((customer) => {
+                    const bday = isBirthdaySoon(customer.birthDate)
+                    const spent = customer.totalPurchases ?? 0
+                    const pct = goal?.enabled && goal.amount ? Math.min((spent / goal.amount) * 100, 100) : 0
+                    const reached = pct >= 100
+                    return (
+                      <tr key={customer.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">
+                              {customer.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-sm font-medium text-white">{customer.name}</p>
+                                {bday.today && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-pink-500/10 border border-pink-500/30 text-pink-400">
+                                    <Cake className="w-3 h-3" />Hoje!
+                                  </span>
+                                )}
+                                {!bday.today && bday.soon && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs bg-pink-500/10 border border-pink-500/20 text-pink-300">
+                                    <Cake className="w-3 h-3" />{bday.label}
+                                  </span>
+                                )}
+                              </div>
+                              {customer.address && <p className="text-xs text-gray-500 truncate max-w-xs">{customer.address}</p>}
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-white">{customer.name}</p>
-                            {customer.address && <p className="text-xs text-gray-500 truncate max-w-xs">{customer.address}</p>}
+                        </td>
+                        <td className="px-6 py-4">
+                          {customer.phone && <div className="flex items-center gap-1.5 text-xs text-gray-400"><Phone className="w-3.5 h-3.5" />{customer.phone}</div>}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold">
+                            {customer._count?.sales ?? 0}
+                          </span>
+                        </td>
+                        {goal?.enabled && (
+                          <td className="px-6 py-4 min-w-[180px]">
+                            {spent > 0 ? (
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-gray-400">{formatCurrency(spent)}</span>
+                                  {reached
+                                    ? <span className="text-xs text-amber-400 font-semibold flex items-center gap-1"><Trophy className="w-3 h-3" />Ganhou!</span>
+                                    : <span className="text-xs text-gray-500">{Math.round(pct)}%</span>
+                                  }
+                                </div>
+                                <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
+                                  <div className={`h-full rounded-full ${reached ? 'bg-amber-400' : 'bg-amber-500/60'}`} style={{ width: `${pct}%` }} />
+                                </div>
+                              </div>
+                            ) : <span className="text-xs text-gray-600">—</span>}
+                          </td>
+                        )}
+                        <td className="px-6 py-4"><span className="text-sm text-gray-400">{formatDate(customer.createdAt)}</span></td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button onClick={() => openEdit(customer)} className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => setDeleteId(customer.id)} className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-4 h-4" /></button>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {customer.phone && <div className="flex items-center gap-1.5 text-xs text-gray-400"><Phone className="w-3.5 h-3.5" />{customer.phone}</div>}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold">
-                          {customer._count?.sales ?? 0}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4"><span className="text-sm text-gray-400">{formatDate(customer.createdAt)}</span></td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => openEdit(customer)} className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-4 h-4" /></button>
-                          <button onClick={() => setDeleteId(customer.id)} className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </>

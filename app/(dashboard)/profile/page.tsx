@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Lock, Save, Wallet } from 'lucide-react'
+import { User, Lock, Save, Wallet, Trophy } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -27,14 +27,28 @@ export default function ProfilePage() {
   const [savingSaldo, setSavingSaldo] = useState(false)
   const [saldoSuccess, setSaldoSuccess] = useState(false)
   const [saldoError, setSaldoError] = useState('')
+  const [goalEnabled, setGoalEnabled] = useState(false)
+  const [goalAmount, setGoalAmount] = useState('1500')
+  const [goalMonths, setGoalMonths] = useState('2')
+  const [goalPrize, setGoalPrize] = useState('Peruana')
+  const [goalDiscount, setGoalDiscount] = useState('10')
+  const [savingGoal, setSavingGoal] = useState(false)
+  const [goalSuccess, setGoalSuccess] = useState(false)
+  const [goalError, setGoalError] = useState('')
 
   useEffect(() => {
     Promise.all([
       fetch('/api/auth/me').then(r => r.json()),
       fetch('/api/settings').then(r => r.json()),
-    ]).then(([me, setting]) => {
+      fetch('/api/settings/goal').then(r => r.json()),
+    ]).then(([me, setting, goal]) => {
       if (me.data) { setProfile(me.data); setName(me.data.name); setEmail(me.data.email) }
       setSaldoAjuste(String(setting.value ?? 0))
+      setGoalEnabled(!!goal.enabled)
+      setGoalAmount(String(goal.amount ?? 1500))
+      setGoalMonths(String(goal.months ?? 2))
+      setGoalPrize(goal.prize ?? 'Peruana')
+      setGoalDiscount(String(goal.discount ?? 10))
     }).finally(() => setLoading(false))
   }, [])
 
@@ -126,6 +140,96 @@ export default function ProfilePage() {
             <Input label="Valor de ajuste (R$)" type="number" step="0.01" value={saldoAjuste} onChange={e => setSaldoAjuste(e.target.value)} placeholder="Ex: 6.00" />
             <Button type="submit" loading={savingSaldo}>
               <Save className="w-4 h-4" /> Salvar ajuste
+            </Button>
+          </form>
+        </div>
+
+        {/* Meta de compras */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <h3 className="text-base font-semibold text-white mb-1 flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-amber-400" /> Meta de Compras — Brinde
+          </h3>
+          <p className="text-xs text-gray-500 mb-4">Configure uma meta para clientes que atingirem determinado valor de compras em um período ganharem um brinde. Você será notificado quando um cliente atingir a meta.</p>
+          <form onSubmit={async (e) => {
+            e.preventDefault(); setSavingGoal(true); setGoalError(''); setGoalSuccess(false)
+            try {
+              const res = await fetch('/api/settings/goal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: goalEnabled, amount: goalAmount, months: goalMonths, prize: goalPrize, discount: goalDiscount }),
+              })
+              const d = await res.json()
+              if (!res.ok) { setGoalError(d.error); return }
+              setGoalSuccess(true)
+              setTimeout(() => setGoalSuccess(false), 3000)
+            } finally { setSavingGoal(false) }
+          }} className="space-y-4">
+            {goalError && <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{goalError}</div>}
+            {goalSuccess && <div className="px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400">✓ Meta salva com sucesso!</div>}
+
+            {/* Toggle */}
+            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-xl border border-gray-700">
+              <div>
+                <p className="text-sm font-medium text-white">Ativar sistema de metas</p>
+                <p className="text-xs text-gray-500 mt-0.5">Mostra progresso dos clientes e notifica ao atingir a meta</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGoalEnabled(!goalEnabled)}
+                className={`relative w-11 h-6 rounded-full transition-colors ${goalEnabled ? 'bg-amber-500' : 'bg-gray-600'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${goalEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            {goalEnabled && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Valor da meta (R$)"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={goalAmount}
+                    onChange={e => setGoalAmount(e.target.value)}
+                    placeholder="1500.00"
+                  />
+                  <Input
+                    label="Período (meses)"
+                    type="number"
+                    min="1"
+                    max="24"
+                    value={goalMonths}
+                    onChange={e => setGoalMonths(e.target.value)}
+                    placeholder="2"
+                  />
+                </div>
+                <Input
+                  label="Brinde / Prêmio"
+                  value={goalPrize}
+                  onChange={e => setGoalPrize(e.target.value)}
+                  placeholder="Ex: Peruana, Camiseta, Vale desconto..."
+                />
+                <Input
+                  label="Desconto de aniversário (%)"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={goalDiscount}
+                  onChange={e => setGoalDiscount(e.target.value)}
+                  placeholder="10"
+                />
+                <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                  <p className="text-xs text-amber-400">
+                    🏆 <strong>Exemplo:</strong> Comprando <strong>R$ {goalAmount}</strong> em <strong>{goalMonths} meses</strong>, o cliente ganha <strong>{goalPrize}</strong> de brinde.
+                    Você receberá uma notificação com botão para avisar o cliente via WhatsApp!
+                  </p>
+                </div>
+              </>
+            )}
+
+            <Button type="submit" loading={savingGoal}>
+              <Save className="w-4 h-4" /> Salvar configuração de meta
             </Button>
           </form>
         </div>

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /b /s *.ts *.tsx *.json *.prisma *.js *.css)",
+      "Bash(findstr /v \"node_modules\")",
+      "Bash(findstr /v \".next\")"
+    ]
+  }
+}

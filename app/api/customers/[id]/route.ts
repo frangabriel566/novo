@@ -7,6 +7,7 @@ const updateSchema = z.object({
   name: z.string().min(2).optional(),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
+  birthDate: z.string().optional().nullable(),
 })
 
 export async function GET(
@@ -53,9 +54,13 @@ export async function PUT(
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
     }
 
+    const { birthDate, ...rest } = parsed.data
     const customer = await prisma.customer.update({
       where: { id: params.id },
-      data: parsed.data,
+      data: {
+        ...rest,
+        birthDate: birthDate === null ? null : birthDate ? new Date(birthDate) : undefined,
+      },
     })
 
     return NextResponse.json({ data: customer })

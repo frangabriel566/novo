@@ -26,9 +26,11 @@ export interface Customer {
   email?: string | null
   phone: string | null
   address: string | null
+  birthDate?: string | null
   createdAt: string
   updatedAt: string
   _count?: { sales: number }
+  totalPurchases?: number
 }
 
 export interface SaleItem {
@@ -90,6 +92,15 @@ export interface CustomerFormData {
   name: string
   phone: string
   address: string
+  birthDate?: string
+}
+
+export interface GoalSettings {
+  enabled: boolean
+  amount: number
+  months: number
+  prize: string
+  discount: number
 }
 
 export interface SaleItemInput {
