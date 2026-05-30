@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Edit2, Trash2, Users, Phone, Cake, Trophy } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Users, Phone, Cake, Trophy, MessageCircle } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -39,6 +39,7 @@ export default function CustomersPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [goal, setGoal] = useState<GoalSettings | null>(null)
+  const [birthdayMsg, setBirthdayMsg] = useState({ message: '', discount: '30' })
 
   const pageSize = 10
 
@@ -60,7 +61,24 @@ export default function CustomersPage() {
 
   useEffect(() => {
     fetch('/api/settings/goal').then(r => r.json()).then(setGoal).catch(() => {})
+    fetch('/api/settings/birthday').then(r => r.json()).then((d) => {
+      setBirthdayMsg({
+        message: d.message ?? '',
+        discount: String(d.discount ?? 30),
+      })
+    }).catch(() => {})
   }, [])
+
+  function buildWaLink(customer: Customer) {
+    const phone = customer.phone ? customer.phone.replace(/\D/g, '') : null
+    const waPhone = phone && phone.length >= 10 ? `55${phone}` : null
+    if (!waPhone) return null
+    const DEFAULT = 'Parabéns {nome}! 🎉🎂 A King Store deseja a você um feliz aniversário! Como presente especial, você tem {desconto}% de desconto em toda a nossa loja hoje. Aproveite e venha nos visitar! 🛍️🎁'
+    const text = (birthdayMsg.message || DEFAULT)
+      .replace(/\{nome\}/g, customer.name)
+      .replace(/\{desconto\}/g, birthdayMsg.discount)
+    return `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`
+  }
 
   function openCreate() { setEditCustomer(undefined); setModalOpen(true) }
   function openEdit(customer: Customer) { setEditCustomer(customer); setModalOpen(true) }
@@ -128,8 +146,9 @@ export default function CustomersPage() {
               <div className="sm:hidden divide-y divide-gray-800">
                 {customers.map((customer) => {
                   const bday = isBirthdaySoon(customer.birthDate)
+                  const waLink = bday.today ? buildWaLink(customer) : null
                   return (
-                    <div key={customer.id} className="px-4 py-3 flex items-start gap-3">
+                    <div key={customer.id} className={`px-4 py-3 flex items-start gap-3 ${bday.today ? 'bg-pink-500/5' : ''}`}>
                       <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0 mt-0.5">
                         {customer.name.charAt(0).toUpperCase()}
                       </div>
@@ -155,6 +174,12 @@ export default function CustomersPage() {
                         </div>
                         <span className="text-xs text-amber-400">{customer._count?.sales ?? 0} compra(s)</span>
                         <GoalBar customer={customer} />
+                        {bday.today && waLink && (
+                          <a href={waLink} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 transition-colors">
+                            <MessageCircle className="w-3.5 h-3.5" /> Enviar parabéns 🎉
+                          </a>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => openEdit(customer)} className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-4 h-4" /></button>
@@ -183,8 +208,9 @@ export default function CustomersPage() {
                     const spent = customer.totalPurchases ?? 0
                     const pct = goal?.enabled && goal.amount ? Math.min((spent / goal.amount) * 100, 100) : 0
                     const reached = pct >= 100
+                    const waLink = bday.today ? buildWaLink(customer) : null
                     return (
-                      <tr key={customer.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                      <tr key={customer.id} className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors ${bday.today ? 'bg-pink-500/5' : ''}`}>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">
@@ -237,6 +263,15 @@ export default function CustomersPage() {
                         <td className="px-6 py-4"><span className="text-sm text-gray-400">{formatDate(customer.createdAt)}</span></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
+                            {bday.today && waLink && (
+                              <a href={waLink} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 transition-colors">
+                                <MessageCircle className="w-3.5 h-3.5" /> Parabéns 🎉
+                              </a>
+                            )}
+                            {bday.today && !waLink && (
+                              <span className="text-xs text-gray-600 italic">Sem telefone</span>
+                            )}
                             <button onClick={() => openEdit(customer)} className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Edit2 className="w-4 h-4" /></button>
                             <button onClick={() => setDeleteId(customer.id)} className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-4 h-4" /></button>
                           </div>
