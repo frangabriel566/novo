@@ -50,7 +50,8 @@ export async function GET() {
     const birthdayNotifications = birthdayCustomers
       .filter((c) => {
         if (!c.birthDate) return false
-        const bd = new Date(c.birthDate)
+        const iso = c.birthDate.toISOString().split('T')[0]
+        const bd = new Date(iso + 'T12:00:00')
         return bd.getMonth() + 1 === todayMonth && bd.getDate() === todayDay
       })
       .map((c) => {

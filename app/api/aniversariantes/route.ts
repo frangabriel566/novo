@@ -24,9 +24,11 @@ export async function GET() {
       settingMap.birthday_message ??
       'Parabéns {nome}! 🎉🎂 A King Store deseja a você um feliz aniversário! Como presente especial, você tem {desconto}% de desconto em toda a nossa loja hoje. Aproveite e venha nos visitar! 🛍️🎁'
 
+    const parseBD = (d: Date) => new Date(d.toISOString().split('T')[0] + 'T12:00:00')
+
     const todayBirthdays = customers
       .filter((c) => {
-        const bd = new Date(c.birthDate!)
+        const bd = parseBD(c.birthDate!)
         return bd.getMonth() + 1 === todayMonth && bd.getDate() === todayDay
       })
       .map((c) => {
@@ -46,7 +48,7 @@ export async function GET() {
     // Próximos 7 dias
     const upcoming = customers
       .filter((c) => {
-        const bd = new Date(c.birthDate!)
+        const bd = parseBD(c.birthDate!)
         const bMonth = bd.getMonth() + 1
         const bDay = bd.getDate()
         for (let i = 1; i <= 7; i++) {
@@ -57,7 +59,7 @@ export async function GET() {
         return false
       })
       .map((c) => {
-        const bd = new Date(c.birthDate!)
+        const bd = parseBD(c.birthDate!)
         const bMonth = bd.getMonth() + 1
         const bDay = bd.getDate()
         let daysUntil = 0

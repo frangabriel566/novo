@@ -91,16 +91,17 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
 
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-300">
-          Data de aniversário
-          <span className="ml-1 text-xs text-gray-500">(opcional)</span>
+          Data de nascimento
+          <span className="ml-1 text-xs text-gray-500">(dia/mês/ano — opcional)</span>
         </label>
         <input
           type="date"
           value={form.birthDate ?? ''}
+          max={new Date().toISOString().split('T')[0]}
           onChange={(e) => handleChange('birthDate', e.target.value)}
           className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors [color-scheme:dark]"
         />
-        <p className="text-xs text-gray-500">🎂 Cadastre para receber alerta e enviar desconto via WhatsApp no aniversário</p>
+        <p className="text-xs text-gray-500">🎂 Ex: 30/05/1995 — usamos o dia e mês para notificar no aniversário</p>
       </div>
 
       <div className="flex gap-3 pt-2">

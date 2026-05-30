@@ -12,7 +12,10 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 
 function isBirthdaySoon(birthDate: string | null | undefined) {
   if (!birthDate) return { today: false, soon: false, label: '' }
-  const bd = new Date(birthDate)
+  // Use T12:00:00 to avoid timezone shifting the date
+  const bd = new Date(
+    typeof birthDate === 'string' ? birthDate.split('T')[0] + 'T12:00:00' : birthDate
+  )
   const now = new Date()
   const bMonth = bd.getMonth() + 1
   const bDay = bd.getDate()
