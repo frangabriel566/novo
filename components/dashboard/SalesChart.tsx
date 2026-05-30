@@ -53,11 +53,12 @@ export default function SalesChart({ data }: SalesChartProps) {
   }))
 
   const maxValue = Math.max(...formattedData.map((d) => d.total), 0)
-  const yMax = maxValue > 0 ? Math.ceil(maxValue * 1.5) : 100
+  const tickStep = 200
+  const yMax = maxValue > 0 ? Math.ceil((maxValue * 1.3) / tickStep) * tickStep : tickStep * 2
+  const yTicks = Array.from({ length: yMax / tickStep + 1 }, (_, i) => i * tickStep)
 
-  // Show only every 5th label to avoid crowding
-  const tickFormatter = (_: string, index: number) =>
-    index % 5 === 0 ? formattedData[index]?.label ?? '' : ''
+  const xTickFormatter = (label: string, index: number) =>
+    index % 5 === 0 ? label : ''
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
@@ -77,14 +78,15 @@ export default function SalesChart({ data }: SalesChartProps) {
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
           <XAxis
-            dataKey="date"
-            tickFormatter={tickFormatter}
+            dataKey="label"
+            tickFormatter={xTickFormatter}
             tick={{ fill: '#6b7280', fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             domain={[0, yMax]}
+            ticks={yTicks}
             tickFormatter={(v) =>
               v >= 1000 ? `R$${(v / 1000).toFixed(1).replace(/\.0$/, '')}k` : `R$${v}`
             }

@@ -7,14 +7,7 @@ export async function GET() {
     const todayMonth = today.getMonth() + 1
     const todayDay = today.getDate()
 
-    // Birthday window: today + next 7 days
-    const upcomingDays = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(today)
-      d.setDate(today.getDate() + i)
-      return { month: d.getMonth() + 1, day: d.getDate() }
-    })
-
-    const [lowStockProducts, pendingSales, recentSales, birthdayCustomers, goalSettings] =
+    const [lowStockProducts, pendingSales, recentSales, birthdayCustomers, goalSettings, birthdaySettings] =
       await Promise.all([
         prisma.$queryRaw<{ id: string; name: string; quantity: number }[]>`
           SELECT id, name, quantity FROM products WHERE quantity < "lowStockThreshold" ORDER BY quantity ASC LIMIT 5
@@ -41,35 +34,40 @@ export async function GET() {
         prisma.setting.findMany({
           where: { key: { in: ['goal_enabled', 'goal_amount', 'goal_months', 'goal_prize', 'goal_discount'] } },
         }),
+        prisma.setting.findMany({
+          where: { key: { in: ['birthday_message', 'birthday_discount'] } },
+        }),
       ])
 
-    // --- Birthday notifications ---
+    // --- Birthday settings ---
+    const birthdayMap = Object.fromEntries(birthdaySettings.map((s) => [s.key, s.value]))
+    const birthdayDiscount = birthdayMap.birthday_discount ?? '30'
+    const birthdayMessageTemplate =
+      birthdayMap.birthday_message ??
+      'Parabéns {nome}! 🎉🎂 Você recebe {desconto}% de desconto hoje por ser seu aniversário na King Store. Venha nos visitar! 🛍️'
+
+    // --- Birthday notifications (only today) ---
     const birthdayNotifications = birthdayCustomers
       .filter((c) => {
         if (!c.birthDate) return false
         const bd = new Date(c.birthDate)
-        const bMonth = bd.getMonth() + 1
-        const bDay = bd.getDate()
-        return upcomingDays.some((d) => d.month === bMonth && d.day === bDay)
+        return bd.getMonth() + 1 === todayMonth && bd.getDate() === todayDay
       })
       .map((c) => {
-        const bd = new Date(c.birthDate!)
-        const bMonth = bd.getMonth() + 1
-        const bDay = bd.getDate()
-        const isToday = bMonth === todayMonth && bDay === todayDay
         const phone = c.phone ? c.phone.replace(/\D/g, '') : null
         const waPhone = phone && phone.length >= 10 ? `55${phone}` : null
+        const waMessage = birthdayMessageTemplate
+          .replace(/\{nome\}/g, c.name)
+          .replace(/\{desconto\}/g, birthdayDiscount)
         return {
           id: `birthday-${c.id}`,
           type: 'birthday' as const,
-          title: isToday ? '🎂 Aniversário hoje!' : '🎂 Aniversário em breve',
-          message: `${c.name} faz aniversário ${isToday ? 'hoje' : `dia ${bDay}/${bMonth}`}`,
+          title: '🎂 Aniversário hoje!',
+          message: `${c.name} faz aniversário hoje`,
           customerId: c.id,
           customerName: c.name,
           waLink: waPhone
-            ? `https://wa.me/${waPhone}?text=${encodeURIComponent(
-                `Olá ${c.name}! 🎉🎂 A King Store deseja a você um feliz aniversário! Como presente especial, você ganhou um desconto exclusivo na sua próxima compra. Venha nos visitar! 🛍️`
-              )}`
+            ? `https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`
             : null,
           createdAt: new Date().toISOString(),
           read: false,

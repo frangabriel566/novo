@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, AlertTriangle, ShoppingCart, X, Cake, Trophy, MessageCircle } from 'lucide-react'
+import { Bell, AlertTriangle, ShoppingCart, X, Cake, Trophy, MessageCircle, Trash2 } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 
 interface Notification {
@@ -38,6 +38,10 @@ export default function NotificationBell() {
 
   function markRead(id: string) {
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n))
+  }
+
+  function deleteNotification(id: string) {
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
   }
 
   const unread = notifications.filter((n) => !n.read).length
@@ -88,6 +92,15 @@ export default function NotificationBell() {
                 {unread > 0 && (
                   <button onClick={markAllRead} className="text-xs text-amber-400 hover:text-amber-300 transition-colors">
                     Marcar todas como lidas
+                  </button>
+                )}
+                {sorted.length > 0 && (
+                  <button
+                    onClick={() => setNotifications([])}
+                    className="text-xs text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1"
+                    title="Excluir todas"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-300">
@@ -142,7 +155,16 @@ export default function NotificationBell() {
 
                       <p className="text-xs text-gray-600 mt-1">{formatDateTime(n.createdAt)}</p>
                     </div>
-                    {!n.read && <div className="w-2 h-2 bg-amber-500 rounded-full mt-2 shrink-0" />}
+                    <div className="flex flex-col items-center gap-2 shrink-0">
+                      {!n.read && <div className="w-2 h-2 bg-amber-500 rounded-full" />}
+                      <button
+                        onClick={() => deleteNotification(n.id)}
+                        className="text-gray-600 hover:text-red-400 transition-colors mt-0.5"
+                        title="Excluir notificação"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))
               )}

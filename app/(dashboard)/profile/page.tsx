@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Lock, Save, Wallet, Trophy } from 'lucide-react'
+import { User, Lock, Save, Wallet, Trophy, Cake, MessageCircle } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -35,13 +35,21 @@ export default function ProfilePage() {
   const [savingGoal, setSavingGoal] = useState(false)
   const [goalSuccess, setGoalSuccess] = useState(false)
   const [goalError, setGoalError] = useState('')
+  const [birthdayMessage, setBirthdayMessage] = useState(
+    'Parabéns {nome}! 🎉🎂 Você recebe {desconto}% de desconto hoje por ser seu aniversário na King Store. Venha nos visitar! 🛍️'
+  )
+  const [birthdayDiscount, setBirthdayDiscount] = useState('30')
+  const [savingBirthday, setSavingBirthday] = useState(false)
+  const [birthdaySuccess, setBirthdaySuccess] = useState(false)
+  const [birthdayError, setBirthdayError] = useState('')
 
   useEffect(() => {
     Promise.all([
       fetch('/api/auth/me').then(r => r.json()),
       fetch('/api/settings').then(r => r.json()),
       fetch('/api/settings/goal').then(r => r.json()),
-    ]).then(([me, setting, goal]) => {
+      fetch('/api/settings/birthday').then(r => r.json()),
+    ]).then(([me, setting, goal, birthday]) => {
       if (me.data) { setProfile(me.data); setName(me.data.name); setEmail(me.data.email) }
       setSaldoAjuste(String(setting.value ?? 0))
       setGoalEnabled(!!goal.enabled)
@@ -49,6 +57,8 @@ export default function ProfilePage() {
       setGoalMonths(String(goal.months ?? 2))
       setGoalPrize(goal.prize ?? 'Peruana')
       setGoalDiscount(String(goal.discount ?? 10))
+      if (birthday.message) setBirthdayMessage(birthday.message)
+      if (birthday.discount) setBirthdayDiscount(String(birthday.discount))
     }).finally(() => setLoading(false))
   }, [])
 
@@ -230,6 +240,72 @@ export default function ProfilePage() {
 
             <Button type="submit" loading={savingGoal}>
               <Save className="w-4 h-4" /> Salvar configuração de meta
+            </Button>
+          </form>
+        </div>
+
+        {/* Mensagem de aniversário */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <h3 className="text-base font-semibold text-white mb-1 flex items-center gap-2">
+            <Cake className="w-5 h-5 text-pink-400" /> Mensagem de Aniversário — WhatsApp
+          </h3>
+          <p className="text-xs text-gray-500 mb-4">
+            Personalize a mensagem enviada via WhatsApp para clientes que fazem aniversário hoje.
+            Use <span className="text-pink-400 font-mono">{'{nome}'}</span> para o nome do cliente
+            e <span className="text-pink-400 font-mono">{'{desconto}'}</span> para o percentual de desconto.
+          </p>
+          <form onSubmit={async (e) => {
+            e.preventDefault(); setSavingBirthday(true); setBirthdayError(''); setBirthdaySuccess(false)
+            try {
+              const res = await fetch('/api/settings/birthday', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: birthdayMessage, discount: birthdayDiscount }),
+              })
+              const d = await res.json()
+              if (!res.ok) { setBirthdayError(d.error); return }
+              setBirthdaySuccess(true)
+              setTimeout(() => setBirthdaySuccess(false), 3000)
+            } finally { setSavingBirthday(false) }
+          }} className="space-y-4">
+            {birthdayError && <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">{birthdayError}</div>}
+            {birthdaySuccess && <div className="px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-400">✓ Mensagem salva com sucesso!</div>}
+
+            <Input
+              label="Desconto de aniversário (%)"
+              type="number"
+              min="0"
+              max="100"
+              value={birthdayDiscount}
+              onChange={e => setBirthdayDiscount(e.target.value)}
+              placeholder="30"
+            />
+
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-300">Mensagem de aniversário</label>
+              <textarea
+                value={birthdayMessage}
+                onChange={e => setBirthdayMessage(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 resize-none"
+                placeholder="Ex: Parabéns {nome}! Você tem {desconto}% de desconto hoje!"
+              />
+            </div>
+
+            {/* Preview */}
+            <div className="p-3 bg-pink-500/5 border border-pink-500/20 rounded-xl">
+              <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                <MessageCircle className="w-3.5 h-3.5 text-pink-400" /> Prévia da mensagem:
+              </p>
+              <p className="text-xs text-pink-300 leading-relaxed">
+                {birthdayMessage
+                  .replace(/\{nome\}/g, 'João Silva')
+                  .replace(/\{desconto\}/g, birthdayDiscount || '30')}
+              </p>
+            </div>
+
+            <Button type="submit" loading={savingBirthday}>
+              <Save className="w-4 h-4" /> Salvar mensagem de aniversário
             </Button>
           </form>
         </div>
