@@ -16,19 +16,49 @@ interface Notification {
   read: boolean
 }
 
+const DISMISSED_KEY = 'dismissed_notifications'
+
+function getDismissed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DISMISSED_KEY)
+    if (!raw) return new Set()
+    const parsed: { id: string; date: string }[] = JSON.parse(raw)
+    const today = new Date().toISOString().split('T')[0]
+    // Keep only today's dismissals so birthday notifications reset each new day
+    return new Set(parsed.filter((e) => e.date === today).map((e) => e.id))
+  } catch {
+    return new Set()
+  }
+}
+
+function saveDismissed(ids: Set<string>) {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const entries = Array.from(ids).map((id) => ({ id, date: today }))
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(entries))
+  } catch {}
+}
+
 export default function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => { loadNotifications() }, [])
+  useEffect(() => {
+    const d = getDismissed()
+    setDismissed(d)
+    loadNotifications(d)
+  }, [])
 
-  async function loadNotifications() {
+  async function loadNotifications(currentDismissed?: Set<string>) {
     setLoading(true)
     try {
       const res = await fetch('/api/notifications')
       const data = await res.json()
-      setNotifications(data.data ?? [])
+      const all: Notification[] = data.data ?? []
+      const d = currentDismissed ?? getDismissed()
+      setNotifications(all.filter((n) => !d.has(n.id)))
     } finally { setLoading(false) }
   }
 
@@ -42,6 +72,22 @@ export default function NotificationBell() {
 
   function deleteNotification(id: string) {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
+    setDismissed((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      saveDismissed(next)
+      return next
+    })
+  }
+
+  function deleteAll() {
+    const ids = new Set(notifications.map((n) => n.id))
+    setNotifications([])
+    setDismissed((prev) => {
+      const next = new Set([...prev, ...ids])
+      saveDismissed(next)
+      return next
+    })
   }
 
   const unread = notifications.filter((n) => !n.read).length
@@ -96,7 +142,7 @@ export default function NotificationBell() {
                 )}
                 {sorted.length > 0 && (
                   <button
-                    onClick={() => setNotifications([])}
+                    onClick={deleteAll}
                     className="text-xs text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1"
                     title="Excluir todas"
                   >
