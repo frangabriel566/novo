@@ -36,7 +36,7 @@ export default function ProfilePage() {
   const [goalSuccess, setGoalSuccess] = useState(false)
   const [goalError, setGoalError] = useState('')
   const [birthdayMessage, setBirthdayMessage] = useState(
-    'Parabéns {nome}! 🎉🎂 Você recebe {desconto}% de desconto hoje por ser seu aniversário na King Store. Venha nos visitar! 🛍️'
+    'Parabéns {nome}! 🎉🎂 A King Store deseja a você um feliz aniversário! Como presente especial, você tem {desconto}% de desconto em toda a nossa loja hoje. Aproveite e venha nos visitar! 🛍️🎁'
   )
   const [birthdayDiscount, setBirthdayDiscount] = useState('30')
   const [savingBirthday, setSavingBirthday] = useState(false)

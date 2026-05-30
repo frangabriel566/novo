@@ -44,7 +44,7 @@ export async function GET() {
     const birthdayDiscount = birthdayMap.birthday_discount ?? '30'
     const birthdayMessageTemplate =
       birthdayMap.birthday_message ??
-      'Parabéns {nome}! 🎉🎂 Você recebe {desconto}% de desconto hoje por ser seu aniversário na King Store. Venha nos visitar! 🛍️'
+      'Parabéns {nome}! 🎉🎂 A King Store deseja a você um feliz aniversário! Como presente especial, você tem {desconto}% de desconto em toda a nossa loja hoje. Aproveite e venha nos visitar! 🛍️🎁'
 
     // --- Birthday notifications (only today) ---
     const birthdayNotifications = birthdayCustomers
