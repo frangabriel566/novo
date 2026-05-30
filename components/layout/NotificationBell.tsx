@@ -81,10 +81,11 @@ export default function NotificationBell() {
   }
 
   function deleteAll() {
-    const ids = new Set(notifications.map((n) => n.id))
+    const ids = notifications.map((n) => n.id)
     setNotifications([])
     setDismissed((prev) => {
-      const next = new Set([...prev, ...ids])
+      const next = new Set(Array.from(prev))
+      ids.forEach((id) => next.add(id))
       saveDismissed(next)
       return next
     })
