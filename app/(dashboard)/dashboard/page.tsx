@@ -135,6 +135,24 @@ export default async function DashboardPage() {
                   <span className="text-rose-400 font-medium">−{formatCurrency(stats?.totalExpenses ?? 0)}</span>
                 </div>
               )}
+              {(stats?.totalFiadoPaid ?? 0) > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-emerald-400" /> Fiado pago</span>
+                  <span className="text-emerald-400 font-medium">+{formatCurrency(stats?.totalFiadoPaid ?? 0)}</span>
+                </div>
+              )}
+              {(stats?.saldoAjuste ?? 0) !== 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 flex items-center gap-1">
+                    {(stats?.saldoAjuste ?? 0) > 0
+                      ? <TrendingUp className="w-3 h-3 text-emerald-400" />
+                      : <TrendingDown className="w-3 h-3 text-rose-400" />} Ajuste manual
+                  </span>
+                  <span className={`font-medium ${(stats?.saldoAjuste ?? 0) > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {(stats?.saldoAjuste ?? 0) > 0 ? '+' : '−'}{formatCurrency(Math.abs(stats?.saldoAjuste ?? 0))}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
