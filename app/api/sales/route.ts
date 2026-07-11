@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
+    const from = searchParams.get('from') || ''
+    const to = searchParams.get('to') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '10')
 
@@ -32,6 +34,12 @@ export async function GET(request: NextRequest) {
       { customer: { name: { contains: search, mode: 'insensitive' } } },
       { notes: { contains: search, mode: 'insensitive' } },
     ]
+    if (from || to) {
+      const createdAt: Record<string, Date> = {}
+      if (from) createdAt.gte = new Date(`${from}T00:00:00`)
+      if (to) createdAt.lte = new Date(`${to}T23:59:59.999`)
+      where.createdAt = createdAt
+    }
 
     const [sales, total] = await Promise.all([
       prisma.sale.findMany({
