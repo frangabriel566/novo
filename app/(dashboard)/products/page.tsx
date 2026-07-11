@@ -83,7 +83,7 @@ export default function ProductsPage() {
               {/* Mobile cards */}
               <div className="sm:hidden divide-y divide-gray-800">
                 {products.map((product) => {
-                  const stock = getStockStatus(product.quantity)
+                  const stock = getStockStatus(product.quantity, product.lowStockThreshold)
                   return (
                     <div key={product.id} className="px-4 py-3 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
@@ -127,7 +127,7 @@ export default function ProductsPage() {
                 </thead>
                 <tbody>
                   {products.map((product) => {
-                    const stock = getStockStatus(product.quantity)
+                    const stock = getStockStatus(product.quantity, product.lowStockThreshold)
                     return (
                       <tr key={product.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
                         <td className="px-6 py-4">
