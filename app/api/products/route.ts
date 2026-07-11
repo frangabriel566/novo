@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '10')
+    const lowStock = searchParams.get('lowStock') === '1'
 
     const where = {
       AND: [
@@ -32,6 +33,17 @@ export async function GET(request: NextRequest) {
         } : {},
         category ? { category: { equals: category, mode: 'insensitive' as const } } : {},
       ],
+    }
+
+    if (lowStock) {
+      const matching = await prisma.product.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      })
+      const filtered = matching.filter((p) => p.quantity < p.lowStockThreshold)
+      const total = filtered.length
+      const products = filtered.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize)
+      return NextResponse.json({ data: products, total, page, pageSize })
     }
 
     const [products, total] = await Promise.all([
