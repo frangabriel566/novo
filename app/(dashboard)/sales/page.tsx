@@ -280,8 +280,12 @@ export default function SalesPage() {
               </div>
             )}
             <p className="text-xs text-gray-500 text-right">Criada em {formatDateTime(viewSale.createdAt)} por {viewSale.user.name}</p>
-            {viewSale.status === 'PENDING' && (
-              <div className="pt-2 border-t border-gray-800">
+            <div className="pt-2 border-t border-gray-800 flex flex-col gap-2">
+              <Button variant="outline" className="w-full" onClick={() => printSaleReceipt(viewSale)}>
+                <Printer className="w-4 h-4" />
+                Imprimir Recibo
+              </Button>
+              {viewSale.status === 'PENDING' && (
                 <Button
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
                   onClick={() => { setViewSale(null); setCompleteId(viewSale.id) }}
@@ -289,8 +293,18 @@ export default function SalesPage() {
                   <BadgeCheck className="w-4 h-4" />
                   Dar Baixa — Marcar como Concluído
                 </Button>
-              </div>
-            )}
+              )}
+              {viewSale.status !== 'CANCELLED' && (
+                <Button
+                  variant="outline"
+                  className="w-full text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+                  onClick={() => { setViewSale(null); setCancelId(viewSale.id); setCancelError('') }}
+                >
+                  <Ban className="w-4 h-4" />
+                  Cancelar Venda
+                </Button>
+              )}
+            </div>
           </div>
         </Modal>
       )}
