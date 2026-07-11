@@ -69,37 +69,56 @@ export async function POST(request: NextRequest) {
     const customer = await prisma.customer.findUnique({ where: { id: customerId } })
     if (!customer) return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
 
-    for (const item of items) {
-      const product = await prisma.product.findUnique({ where: { id: item.productId } })
-      if (!product) return NextResponse.json({ error: `Produto não encontrado` }, { status: 404 })
-      if (product.quantity < item.quantity) {
-        return NextResponse.json({ error: `Estoque insuficiente para ${product.name}. Disponível: ${product.quantity}` }, { status: 400 })
-      }
-    }
+    // Merge duplicate productIds so a repeated item in the cart can't bypass the stock check below.
+    const mergedItems = Object.values(
+      items.reduce((acc, item) => {
+        if (acc[item.productId]) acc[item.productId].quantity += item.quantity
+        else acc[item.productId] = { ...item }
+        return acc
+      }, {} as Record<string, typeof items[number]>)
+    )
 
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
     const total = Math.max(0, subtotal - discount)
     const saleId = crypto.randomUUID()
 
-    await prisma.$transaction([
-      prisma.sale.create({
-        data: {
-          id: saleId,
-          total, discount, status, notes, paymentMethod, customerId,
-          userId: authUser.userId,
-          items: { create: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })) },
-        },
-      }),
-      ...items.flatMap(item => [
-        prisma.product.update({
-          where: { id: item.productId },
-          data: { quantity: { decrement: item.quantity } },
-        }),
-        prisma.stockMovement.create({
-          data: { productId: item.productId, type: 'OUT', quantity: item.quantity, reason: `Venda #${saleId.slice(-6)}`, userId: authUser.userId },
-        }),
-      ]),
-    ])
+    try {
+      await prisma.$transaction(async (tx) => {
+        for (const item of mergedItems) {
+          // Atomic conditional decrement: only succeeds if enough stock remains at write time,
+          // preventing overselling when two sales for the same product happen concurrently.
+          const result = await tx.product.updateMany({
+            where: { id: item.productId, quantity: { gte: item.quantity } },
+            data: { quantity: { decrement: item.quantity } },
+          })
+          if (result.count === 0) {
+            const product = await tx.product.findUnique({ where: { id: item.productId } })
+            if (!product) throw new Error('Produto não encontrado')
+            throw new Error(`Estoque insuficiente para ${product.name}. Disponível: ${product.quantity}`)
+          }
+        }
+
+        await tx.sale.create({
+          data: {
+            id: saleId,
+            total, discount, status, notes, paymentMethod, customerId,
+            userId: authUser.userId,
+            items: { create: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price })) },
+          },
+        })
+
+        await tx.stockMovement.createMany({
+          data: mergedItems.map(item => ({
+            productId: item.productId, type: 'OUT' as const, quantity: item.quantity,
+            reason: `Venda #${saleId.slice(-6)}`, userId: authUser.userId,
+          })),
+        })
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao criar venda'
+      const errStatus = message.startsWith('Estoque insuficiente') || message === 'Produto não encontrado' ? 400 : 500
+      return NextResponse.json({ error: message }, { status: errStatus })
+    }
 
     const sale = await prisma.sale.findUnique({
       where: { id: saleId },
