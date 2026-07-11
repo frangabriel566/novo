@@ -70,12 +70,12 @@ export default function StockPage() {
 
       <div className="px-4 lg:px-8 py-6 space-y-4 animate-fade-in">
         {/* Low stock products */}
-        {products.filter(p => p.quantity < 10).length > 0 && (
+        {products.filter(p => p.quantity < p.lowStockThreshold).length > 0 && (
           <div className="bg-gray-900 border border-amber-500/20 rounded-2xl p-4">
             <p className="text-sm font-semibold text-amber-400 mb-3">⚠️ Produtos com estoque baixo</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {products.filter(p => p.quantity < 10).map(p => {
-                const stock = getStockStatus(p.quantity)
+              {products.filter(p => p.quantity < p.lowStockThreshold).map(p => {
+                const stock = getStockStatus(p.quantity, p.lowStockThreshold)
                 return (
                   <div key={p.id} className="flex items-center justify-between px-3 py-2 bg-gray-800 rounded-lg">
                     <span className="text-xs text-white truncate mr-2">{p.name}</span>
