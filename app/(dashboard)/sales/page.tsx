@@ -106,7 +106,7 @@ export default function SalesPage() {
       />
 
       <div className="px-4 lg:px-8 py-6 space-y-4 animate-fade-in">
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input type="text" value={search}
@@ -116,7 +116,15 @@ export default function SalesPage() {
           </div>
           <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
             options={[{ value: 'COMPLETED', label: 'Concluídas' }, { value: 'PENDING', label: 'Pendentes' }, { value: 'CANCELLED', label: 'Canceladas' }]}
-            placeholder="Todos" className="w-36 sm:w-48" />
+            placeholder="Todos" className="w-full sm:w-48" />
+          <div className="flex gap-2">
+            <input type="date" value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+              className="flex-1 px-3 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors" />
+            <input type="date" value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+              className="flex-1 px-3 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors" />
+          </div>
         </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
