@@ -218,6 +218,9 @@ export default function SalesPage() {
                           {sale.status === 'PENDING' && (
                             <button onClick={() => setCompleteId(sale.id)} title="Dar Baixa" className="p-2 rounded-lg text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"><BadgeCheck className="w-4 h-4" /></button>
                           )}
+                          {sale.status !== 'CANCELLED' && (
+                            <button onClick={() => { setCancelId(sale.id); setCancelError('') }} title="Cancelar venda" className="p-2 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Ban className="w-4 h-4" /></button>
+                          )}
                           <button onClick={() => setDeleteId(sale.id)} className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
