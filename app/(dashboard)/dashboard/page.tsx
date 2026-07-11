@@ -4,7 +4,7 @@ import Header from '@/components/layout/Header'
 import StatsCard from '@/components/dashboard/StatsCard'
 import SalesChart from '@/components/dashboard/SalesChart'
 import RecentSales from '@/components/dashboard/RecentSales'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, toLocalDateKey } from '@/lib/utils'
 import { getAuthUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
