@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Edit2, Trash2, Package } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { Plus, Search, Edit2, Trash2, Package, X } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -11,6 +12,8 @@ import { Product } from '@/types'
 import { formatCurrency, getStockStatus } from '@/lib/utils'
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams()
+  const lowStockFilter = searchParams.get('filter') === 'low-stock'
   const [products, setProducts] = useState<Product[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -27,12 +30,13 @@ export default function ProductsPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({ search, page: String(page), pageSize: String(pageSize) })
+      if (lowStockFilter) params.set('lowStock', '1')
       const res = await fetch(`/api/products?${params}`)
       const data = await res.json()
       setProducts(data.data ?? [])
       setTotal(data.total ?? 0)
     } finally { setLoading(false) }
-  }, [search, page])
+  }, [search, page, lowStockFilter])
 
   useEffect(() => {
     const timer = setTimeout(loadProducts, 300)
