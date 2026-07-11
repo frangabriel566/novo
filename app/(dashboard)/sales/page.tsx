@@ -332,6 +332,25 @@ export default function SalesPage() {
           </Button>
         </div>
       </Modal>
+
+      <Modal isOpen={!!cancelId} onClose={() => setCancelId(null)} title="Cancelar Venda" size="sm">
+        <div className="flex flex-col items-center gap-4 py-2">
+          <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+            <Ban className="w-7 h-7 text-amber-400" />
+          </div>
+          <p className="text-gray-300 text-sm text-center">
+            Tem certeza que deseja cancelar esta venda? O estoque dos produtos será restaurado automaticamente. A venda continua registrada com status <span className="text-amber-400 font-semibold">Cancelada</span>.
+          </p>
+          {cancelError && <p className="text-sm text-red-400 text-center">{cancelError}</p>}
+        </div>
+        <div className="flex gap-3 mt-6">
+          <Button variant="outline" onClick={() => setCancelId(null)} className="flex-1">Voltar</Button>
+          <Button onClick={handleCancel} loading={cancelling} className="flex-1 bg-amber-600 hover:bg-amber-500 text-white">
+            <Ban className="w-4 h-4" />
+            Confirmar Cancelamento
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }
