@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, ShoppingCart, Eye, Trash2, CheckCircle, Clock, XCircle, BadgeCheck } from 'lucide-react'
+import { Plus, Search, ShoppingCart, Eye, Trash2, CheckCircle, Clock, XCircle, BadgeCheck, Ban, Printer } from 'lucide-react'
 import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Button from '@/components/ui/Button'
@@ -10,6 +10,7 @@ import Select from '@/components/ui/Select'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { Sale } from '@/types'
 import { formatCurrency, formatDateTime, getStatusColor, getStatusLabel } from '@/lib/utils'
+import { printSaleReceipt } from '@/lib/receipt'
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([])
@@ -17,25 +18,30 @@ export default function SalesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [page, setPage] = useState(1)
   const [viewSale, setViewSale] = useState<Sale | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [completeId, setCompleteId] = useState<string | null>(null)
   const [completing, setCompleting] = useState(false)
+  const [cancelId, setCancelId] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState('')
 
   const pageSize = 10
 
   const loadSales = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({ search, status: statusFilter, page: String(page), pageSize: String(pageSize) })
+      const params = new URLSearchParams({ search, status: statusFilter, from: dateFrom, to: dateTo, page: String(page), pageSize: String(pageSize) })
       const res = await fetch(`/api/sales?${params}`)
       const data = await res.json()
       setSales(data.data ?? [])
       setTotal(data.total ?? 0)
     } finally { setLoading(false) }
-  }, [search, statusFilter, page])
+  }, [search, statusFilter, dateFrom, dateTo, page])
 
   useEffect(() => {
     const timer = setTimeout(loadSales, 300)
@@ -64,6 +70,23 @@ export default function SalesPage() {
       setCompleteId(null)
       loadSales()
     } finally { setCompleting(false) }
+  }
+
+  async function handleCancel() {
+    if (!cancelId) return
+    setCancelling(true)
+    setCancelError('')
+    try {
+      const res = await fetch(`/api/sales/${cancelId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CANCELLED' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setCancelError(data.error || 'Erro ao cancelar venda'); return }
+      setCancelId(null)
+      loadSales()
+    } finally { setCancelling(false) }
   }
 
   const totalPages = Math.ceil(total / pageSize)
