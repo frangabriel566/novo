@@ -142,12 +142,15 @@ export async function DELETE(
       await tx.saleItem.deleteMany({ where: { saleId: params.id } })
       await tx.sale.delete({ where: { id: params.id } })
 
-      // Restore stock
-      for (const item of sale.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { quantity: { increment: item.quantity } },
-        })
+      // Restore stock — skip if the sale was already cancelled, since its stock
+      // was already returned when it was cancelled (avoids double-crediting stock).
+      if (sale.status !== 'CANCELLED') {
+        for (const item of sale.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { quantity: { increment: item.quantity } },
+          })
+        }
       }
     })
 
