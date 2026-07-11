@@ -20,6 +20,22 @@ export function formatDate(date: string | Date): string {
   }).format(new Date(date))
 }
 
+const STORE_TIME_ZONE = 'America/Sao_Paulo'
+
+/**
+ * Chave de data (YYYY-MM-DD) no fuso horário da loja, para agrupar vendas por
+ * dia corretamente independente do fuso horário do servidor (evita que vendas
+ * feitas à noite caiam no dia seguinte quando agrupadas em UTC).
+ */
+export function toLocalDateKey(date: string | Date, timeZone: string = STORE_TIME_ZONE): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(date))
+}
+
 export function formatDateTime(date: string | Date): string {
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
