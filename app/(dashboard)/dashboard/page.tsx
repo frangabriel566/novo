@@ -60,11 +60,11 @@ async function getDashboardStats() {
     for (let i = 29; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
-      const key = date.toISOString().split('T')[0]
+      const key = toLocalDateKey(date)
       salesByDate[key] = { total: 0, count: 0 }
     }
     for (const sale of salesLast30Days) {
-      const key = new Date(sale.createdAt).toISOString().split('T')[0]
+      const key = toLocalDateKey(sale.createdAt)
       if (salesByDate[key]) {
         salesByDate[key].total += sale.total
         salesByDate[key].count += 1
@@ -75,7 +75,7 @@ async function getDashboardStats() {
     const totalExpenses = totalExpensesResult._sum.amount ?? 0
     const totalFiadoPaid = totalFiadoPaidResult._sum.amount ?? 0
     const saldoAjuste = saldoAjusteSetting ? parseFloat(saldoAjusteSetting.value) : 0
-    const saldo = totalRevenue - totalExpenses
+    const saldo = totalRevenue - totalExpenses + totalFiadoPaid + saldoAjuste
 
     return {
       totalRevenue,
@@ -86,7 +86,7 @@ async function getDashboardStats() {
       totalSales,
       totalProducts,
       totalCustomers,
-      lowStockProducts,
+      lowStockProducts: Number(lowStockProducts[0].count),
       recentSales: JSON.parse(JSON.stringify(recentSales)) as any,
       salesChartData: Object.entries(salesByDate).map(([date, data]) => ({
         date,
