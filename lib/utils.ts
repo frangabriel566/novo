@@ -64,11 +64,11 @@ export function getStatusLabel(status: string): string {
   return labels[status] ?? status
 }
 
-export function getStockStatus(quantity: number): {
+export function getStockStatus(quantity: number, lowStockThreshold = 5): {
   label: string
   color: string
 } {
   if (quantity === 0) return { label: 'Sem estoque', color: 'bg-red-500/10 text-red-400 border-red-500/20' }
-  if (quantity < 10) return { label: 'Estoque baixo', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
+  if (quantity < lowStockThreshold) return { label: 'Estoque baixo', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
   return { label: 'Em estoque', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' }
 }
