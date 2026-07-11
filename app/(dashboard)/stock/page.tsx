@@ -15,7 +15,7 @@ interface Movement {
   product: { id: string; name: string; quantity: number }; user: { name: string }; createdAt: string
 }
 
-interface Product { id: string; name: string; quantity: number; category: string }
+interface Product { id: string; name: string; quantity: number; category: string; lowStockThreshold: number }
 
 export default function StockPage() {
   const [movements, setMovements] = useState<Movement[]>([])
