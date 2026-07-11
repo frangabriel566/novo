@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
 
     const salesByDayMap: Record<string, number> = {}
     for (const sale of salesByDay) {
-      const key = new Date(sale.createdAt).toISOString().split('T')[0]
+      const key = toLocalDateKey(sale.createdAt)
       salesByDayMap[key] = (salesByDayMap[key] ?? 0) + sale.total
     }
 
