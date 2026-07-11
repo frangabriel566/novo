@@ -75,6 +75,13 @@ export default function ProductsPage() {
             className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors" />
         </div>
 
+        {lowStockFilter && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg w-fit text-xs text-amber-300">
+            <span>Mostrando apenas produtos com estoque baixo</span>
+            <a href="/products" className="p-0.5 rounded hover:bg-amber-500/20 transition-colors"><X className="w-3.5 h-3.5" /></a>
+          </div>
+        )}
+
         <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
           {loading ? <PageLoader /> : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-500 gap-3">
