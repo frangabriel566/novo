@@ -27,6 +27,7 @@ const adminNavItems = [
 
 const userNavItems = [
   { label: 'Vendas', href: '/sales', icon: ShoppingCart },
+  { label: 'Vendas Atacado', href: '/vendas-atacado', icon: Truck },
 ]
 
 interface SidebarProps {
