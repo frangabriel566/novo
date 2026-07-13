@@ -71,7 +71,7 @@ async function getDashboardStats() {
       const key = toLocalDateKey(date)
       salesByDate[key] = { total: 0, count: 0 }
     }
-    for (const sale of salesLast30Days) {
+    for (const sale of [...salesLast30Days, ...wholesaleSalesLast30Days]) {
       const key = toLocalDateKey(sale.createdAt)
       if (salesByDate[key]) {
         salesByDate[key].total += sale.total
@@ -79,17 +79,21 @@ async function getDashboardStats() {
       }
     }
 
-    const totalRevenue = totalRevenueResult._sum.total ?? 0
+    const totalRetailRevenue = totalRevenueResult._sum.total ?? 0
+    const totalWholesaleRevenue = totalWholesaleRevenueResult._sum.total ?? 0
+    const totalRevenue = totalRetailRevenue + totalWholesaleRevenue
     const totalExpenses = totalExpensesResult._sum.amount ?? 0
     const saldoAjuste = saldoAjusteSetting ? parseFloat(saldoAjusteSetting.value) : 0
     const saldo = totalRevenue - totalExpenses + saldoAjuste
 
     return {
       totalRevenue,
+      totalRetailRevenue,
+      totalWholesaleRevenue,
       totalExpenses,
       saldoAjuste,
       saldo,
-      totalSales,
+      totalSales: totalSales + totalWholesaleSales,
       totalProducts,
       totalCustomers,
       lowStockProducts: Number(lowStockProducts[0].count),
