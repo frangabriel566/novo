@@ -18,17 +18,22 @@ async function getDashboardStats() {
 
     const [
       totalRevenueResult,
+      totalWholesaleRevenueResult,
       totalSales,
+      totalWholesaleSales,
       totalProducts,
       totalCustomers,
       lowStockProducts,
       recentSales,
       salesLast30Days,
+      wholesaleSalesLast30Days,
       totalExpensesResult,
       saldoAjusteSetting,
     ] = await Promise.all([
       prisma.sale.aggregate({ where: { status: 'COMPLETED' }, _sum: { total: true } }),
+      prisma.wholesaleSale.aggregate({ where: { status: 'COMPLETED' }, _sum: { total: true } }),
       prisma.sale.count(),
+      prisma.wholesaleSale.count(),
       prisma.product.count(),
       prisma.customer.count(),
       prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) as count FROM products WHERE quantity < "lowStockThreshold"`,
@@ -46,6 +51,11 @@ async function getDashboardStats() {
         },
       }),
       prisma.sale.findMany({
+        where: { status: 'COMPLETED', createdAt: { gte: thirtyDaysAgo } },
+        select: { total: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      prisma.wholesaleSale.findMany({
         where: { status: 'COMPLETED', createdAt: { gte: thirtyDaysAgo } },
         select: { total: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
