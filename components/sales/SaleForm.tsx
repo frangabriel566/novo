@@ -186,9 +186,15 @@ export default function SaleForm() {
     if (selectedQty > remaining) return
     const existing = items.find((i) => i.productId === selectedProductId)
     if (existing) {
-      setItems(prev => prev.map(i => i.productId === selectedProductId ? { ...i, quantity: i.quantity + selectedQty } : i))
+      const newQty = existing.quantity + selectedQty
+      setItems(prev => prev.map(i => i.productId === selectedProductId
+        ? { ...i, quantity: newQty, price: getEffectivePrice(product, customerType, newQty) }
+        : i))
     } else {
-      setItems(prev => [...prev, { productId: product.id, quantity: selectedQty, price: product.price, product }])
+      setItems(prev => [...prev, {
+        productId: product.id, quantity: selectedQty,
+        price: getEffectivePrice(product, customerType, selectedQty), product,
+      }])
     }
     setSelectedProductId('')
     setProductSearch('')
@@ -199,7 +205,9 @@ export default function SaleForm() {
   function updateItemQty(productId: string, qty: number) {
     const product = products.find(p => p.id === productId)
     const clamped = Math.max(1, Math.min(qty || 1, product?.quantity ?? qty))
-    setItems(prev => prev.map(i => i.productId === productId ? { ...i, quantity: clamped } : i))
+    setItems(prev => prev.map(i => i.productId === productId
+      ? { ...i, quantity: clamped, price: product ? getEffectivePrice(product, customerType, clamped) : i.price }
+      : i))
   }
 
   function handleDiscountChange(e: React.ChangeEvent<HTMLInputElement>) {
