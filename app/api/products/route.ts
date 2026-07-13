@@ -11,15 +11,7 @@ const productSchema = z.object({
   quantity: z.number().int().min(0, 'Quantidade não pode ser negativa'),
   lowStockThreshold: z.number().int().min(0).default(5),
   category: z.string().min(1, 'Categoria é obrigatória'),
-  wholesalePrice: z.number().positive('Preço de atacado deve ser positivo').optional().nullable(),
-  wholesaleMinQty: z.number().int().positive('Quantidade mínima deve ser positiva').optional().nullable(),
-}).refine(
-  (data) => (data.wholesalePrice == null) === (data.wholesaleMinQty == null),
-  { message: 'Informe preço de atacado e quantidade mínima juntos', path: ['wholesalePrice'] }
-).refine(
-  (data) => data.wholesalePrice == null || data.wholesalePrice < data.price,
-  { message: 'Preço de atacado deve ser menor que o preço de venda', path: ['wholesalePrice'] }
-)
+})
 
 export async function GET(request: NextRequest) {
   try {
