@@ -25,7 +25,6 @@ async function getDashboardStats() {
       recentSales,
       salesLast30Days,
       totalExpensesResult,
-      totalFiadoPaidResult,
       saldoAjusteSetting,
     ] = await Promise.all([
       prisma.sale.aggregate({ where: { status: 'COMPLETED' }, _sum: { total: true } }),
