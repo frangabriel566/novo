@@ -71,14 +71,12 @@ async function getDashboardStats() {
 
     const totalRevenue = totalRevenueResult._sum.total ?? 0
     const totalExpenses = totalExpensesResult._sum.amount ?? 0
-    const totalFiadoPaid = totalFiadoPaidResult._sum.amount ?? 0
     const saldoAjuste = saldoAjusteSetting ? parseFloat(saldoAjusteSetting.value) : 0
-    const saldo = totalRevenue - totalExpenses + totalFiadoPaid + saldoAjuste
+    const saldo = totalRevenue - totalExpenses + saldoAjuste
 
     return {
       totalRevenue,
       totalExpenses,
-      totalFiadoPaid,
       saldoAjuste,
       saldo,
       totalSales,
