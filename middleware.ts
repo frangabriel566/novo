@@ -5,7 +5,7 @@ const publicPaths = ['/login', '/register']
 const publicApiPaths = ['/api/auth/login', '/api/auth/register']
 
 // Pages blocked for USER role (admin only)
-const adminOnlyPaths = ['/dashboard', '/products', '/stock', '/produtos-atacado', '/customers', '/expenses', '/vendas-atacado', '/reports', '/users']
+const adminOnlyPaths = ['/dashboard', '/products', '/stock', '/produtos-atacado', '/customers', '/expenses', '/reports', '/users']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
