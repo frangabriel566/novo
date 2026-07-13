@@ -148,6 +148,13 @@ export interface SaleItemInput {
   product?: Product
 }
 
+export interface WholesaleSaleItemInput {
+  productId: string
+  quantity: number
+  price: number
+  product?: WholesaleProduct
+}
+
 export interface SaleFormData {
   customerId: string
   items: SaleItemInput[]
