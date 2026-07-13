@@ -203,6 +203,7 @@ export default function SaleForm() {
     e.preventDefault()
     if (!customerId) { setError('Selecione um cliente'); return }
     if (items.length === 0) { setError('Adicione pelo menos um produto'); return }
+    if (discount > subtotal) { setError('Desconto não pode ser maior que o subtotal da venda'); return }
     setLoading(true); setError('')
     try {
       const res = await fetch('/api/sales', {
