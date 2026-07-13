@@ -180,7 +180,11 @@ export default function SaleForm() {
   }
 
   function removeItem(productId: string) { setItems(prev => prev.filter(i => i.productId !== productId)) }
-  function updateItemQty(productId: string, qty: number) { setItems(prev => prev.map(i => i.productId === productId ? { ...i, quantity: qty } : i)) }
+  function updateItemQty(productId: string, qty: number) {
+    const product = products.find(p => p.id === productId)
+    const clamped = Math.max(1, Math.min(qty || 1, product?.quantity ?? qty))
+    setItems(prev => prev.map(i => i.productId === productId ? { ...i, quantity: clamped } : i))
+  }
 
   function handleDiscountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '')
