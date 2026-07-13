@@ -382,7 +382,14 @@ export default function SaleForm() {
               <div key={item.productId} className="flex items-center gap-3 px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{item.product?.name}</p>
-                  <p className="text-xs text-gray-400">{formatCurrency(item.price)} por unidade</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs text-gray-400">{formatCurrency(item.price)} por unidade</p>
+                    {item.product && item.price === item.product.wholesalePrice && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Atacado
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Input type="number" min={1} max={item.product?.quantity} value={item.quantity}
