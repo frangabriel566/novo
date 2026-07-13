@@ -77,6 +77,18 @@ export async function POST(request: NextRequest) {
     const customer = await prisma.customer.findUnique({ where: { id: customerId } })
     if (!customer) return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
 
+    // Validate every submitted price against the product's real price in the DB.
+    // Without this, a tampered request could sell at any price the client chooses to send.
+    const products = await prisma.product.findMany({ where: { id: { in: items.map(i => i.productId) } } })
+    const productById = new Map(products.map(p => [p.id, p]))
+    for (const item of items) {
+      const product = productById.get(item.productId)
+      if (!product) return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 })
+      if (Math.abs(item.price - product.price) > 0.001) {
+        return NextResponse.json({ error: `Preço inválido para ${product.name}. Atualize a página e tente novamente.` }, { status: 400 })
+      }
+    }
+
     // Merge duplicate productIds so a repeated item in the cart can't bypass the stock check below.
     const mergedItems = Object.values(
       items.reduce((acc, item) => {
@@ -87,6 +99,9 @@ export async function POST(request: NextRequest) {
     )
 
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    if (discount > subtotal) {
+      return NextResponse.json({ error: 'Desconto não pode ser maior que o subtotal da venda' }, { status: 400 })
+    }
     const total = Math.max(0, subtotal - discount)
     const saleId = crypto.randomUUID()
 
