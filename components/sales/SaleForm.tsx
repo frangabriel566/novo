@@ -125,21 +125,6 @@ export default function SaleForm() {
       .then(([c, p]) => { setCustomers(c.data ?? []); setProducts(p.data ?? []) })
   }, [])
 
-  const selectedCustomer = customers.find(c => c.id === customerId)
-  const customerType = selectedCustomer?.type ?? 'RETAIL'
-
-  // Reprecifica os itens do carrinho sempre que o cliente muda (cliente atacado
-  // pode passar a receber o preço de atacado em itens já adicionados, e vice-versa).
-  useEffect(() => {
-    if (items.length === 0) return
-    setItems(prev => prev.map(item => {
-      const product = products.find(p => p.id === item.productId)
-      if (!product) return item
-      return { ...item, price: getEffectivePrice(product, customerType, item.quantity) }
-    }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerType])
-
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (productSearchRef.current && !productSearchRef.current.contains(e.target as Node)) {
