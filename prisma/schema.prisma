@@ -10,18 +10,19 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  name           String
-  email          String          @unique
-  password       String
-  role           Role            @default(USER)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  activities     Activity[]
-  expenses       Expense[]
-  fiados         Fiado[]
-  sales          Sale[]
-  stockMovements StockMovement[]
+  id                  String              @id @default(cuid())
+  name                String
+  email               String              @unique
+  password            String
+  role                Role                @default(USER)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  activities          Activity[]
+  expenses            Expense[]
+  fiados              Fiado[]
+  sales               Sale[]
+  stockMovements      StockMovement[]
+  wholesaleSales      WholesaleSale[]
 
   @@map("users")
 }
@@ -37,8 +38,6 @@ model Product {
   updatedAt         DateTime        @updatedAt
   costPrice         Float           @default(0)
   lowStockThreshold Int             @default(5)
-  wholesalePrice    Float?
-  wholesaleMinQty   Int?
   saleItems         SaleItem[]
   stockMovements    StockMovement[]
 
@@ -46,16 +45,17 @@ model Product {
 }
 
 model Customer {
-  id        String       @id @default(cuid())
-  name      String
-  email     String?      @unique
-  phone     String?
-  address   String?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  birthDate DateTime?
-  type      CustomerType @default(RETAIL)
-  sales     Sale[]
+  id             String          @id @default(cuid())
+  name           String
+  email          String?         @unique
+  phone          String?
+  address        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  birthDate      DateTime?
+  type           CustomerType    @default(RETAIL)
+  sales          Sale[]
+  wholesaleSales WholesaleSale[]
 
   @@map("customers")
 }
