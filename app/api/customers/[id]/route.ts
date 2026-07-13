@@ -3,11 +3,16 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { z } from 'zod'
 
+const phoneRegex = /^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/
+
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
-  phone: z.string().optional().nullable(),
+  phone: z.string().min(1, 'Telefone é obrigatório').regex(phoneRegex, 'Telefone inválido. Use o formato (DDD) 99999-9999'),
   address: z.string().optional().nullable(),
-  birthDate: z.string().optional().nullable(),
+  birthDate: z.string().min(1, 'Data de nascimento é obrigatória')
+    .refine((v) => !isNaN(Date.parse(v)), 'Data de nascimento inválida')
+    .refine((v) => new Date(v) <= new Date(), 'Data de nascimento não pode ser no futuro'),
+  type: z.enum(['RETAIL', 'WHOLESALE']).optional(),
 })
 
 export async function GET(
