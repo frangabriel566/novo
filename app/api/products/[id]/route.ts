@@ -48,6 +48,22 @@ export async function PUT(
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
     }
 
+    const existing = await prisma.product.findUnique({ where: { id: params.id } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 })
+    }
+
+    const wholesalePrice = 'wholesalePrice' in parsed.data ? parsed.data.wholesalePrice : existing.wholesalePrice
+    const wholesaleMinQty = 'wholesaleMinQty' in parsed.data ? parsed.data.wholesaleMinQty : existing.wholesaleMinQty
+    const price = parsed.data.price ?? existing.price
+
+    if ((wholesalePrice == null) !== (wholesaleMinQty == null)) {
+      return NextResponse.json({ error: 'Informe preço de atacado e quantidade mínima juntos' }, { status: 400 })
+    }
+    if (wholesalePrice != null && wholesalePrice >= price) {
+      return NextResponse.json({ error: 'Preço de atacado deve ser menor que o preço de venda' }, { status: 400 })
+    }
+
     const product = await prisma.product.update({
       where: { id: params.id },
       data: parsed.data,
