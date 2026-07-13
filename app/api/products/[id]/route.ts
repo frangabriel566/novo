@@ -11,8 +11,6 @@ const updateSchema = z.object({
   quantity: z.number().int().min(0).optional(),
   lowStockThreshold: z.number().int().min(0).optional(),
   category: z.string().min(1).optional(),
-  wholesalePrice: z.number().positive('Preço de atacado deve ser positivo').optional().nullable(),
-  wholesaleMinQty: z.number().int().positive('Quantidade mínima deve ser positiva').optional().nullable(),
 })
 
 export async function GET(
