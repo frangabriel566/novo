@@ -19,7 +19,6 @@ const adminNavItems = [
   { label: 'Aniversariantes', href: '/aniversariantes', icon: Cake },
   { label: 'Vendas',          href: '/sales',           icon: ShoppingCart },
   { label: 'Despesas',   href: '/expenses',   icon: DollarSign },
-  { label: 'Conta em aberto', href: '/fiado', icon: Wallet },
   { label: 'Relatórios', href: '/reports',    icon: BarChart3 },
   { label: 'Usuários',   href: '/users',      icon: UserCog },
 ]
