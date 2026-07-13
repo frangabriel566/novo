@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import Select from '@/components/ui/Select'
 import { Customer, CustomerFormData } from '@/types'
 
 interface CustomerFormProps {
@@ -10,6 +11,8 @@ interface CustomerFormProps {
   onSuccess: () => void
   onCancel: () => void
 }
+
+const PHONE_REGEX = /^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/
 
 export default function CustomerForm({ customer, onSuccess, onCancel }: CustomerFormProps) {
   const [loading, setLoading] = useState(false)
@@ -21,6 +24,7 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
     birthDate: customer?.birthDate
       ? new Date(customer.birthDate).toISOString().split('T')[0]
       : '',
+    type: customer?.type ?? 'RETAIL',
   })
 
   function handleChange(field: keyof CustomerFormData, value: string) {
@@ -28,8 +32,19 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
     setError('')
   }
 
+  function validate(): string | null {
+    if (!form.phone.trim()) return 'Telefone é obrigatório'
+    if (!PHONE_REGEX.test(form.phone.trim())) return 'Telefone inválido. Use o formato (DDD) 99999-9999'
+    if (!form.birthDate) return 'Data de nascimento é obrigatória'
+    if (new Date(form.birthDate) > new Date()) return 'Data de nascimento não pode ser no futuro'
+    return null
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const validationError = validate()
+    if (validationError) { setError(validationError); return }
+
     setLoading(true)
     setError('')
 
@@ -40,7 +55,7 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, birthDate: form.birthDate || null }),
+        body: JSON.stringify(form),
       })
 
       const data = await res.json()
