@@ -16,6 +16,8 @@ export interface Product {
   quantity: number
   lowStockThreshold: number
   category: string
+  wholesalePrice: number | null
+  wholesaleMinQty: number | null
   createdAt: string
   updatedAt: string
 }
@@ -27,6 +29,7 @@ export interface Customer {
   phone: string | null
   address: string | null
   birthDate?: string | null
+  type: 'RETAIL' | 'WHOLESALE'
   createdAt: string
   updatedAt: string
   _count?: { sales: number }
