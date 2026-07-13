@@ -136,9 +136,15 @@ export default async function DashboardPage() {
             </p>
             <div className="mt-4 space-y-1.5 border-t border-gray-800 pt-4">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-emerald-400" /> Vendas</span>
-                <span className="text-emerald-400 font-medium">+{formatCurrency(stats?.totalRevenue ?? 0)}</span>
+                <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-emerald-400" /> Vendas varejo</span>
+                <span className="text-emerald-400 font-medium">+{formatCurrency(stats?.totalRetailRevenue ?? 0)}</span>
               </div>
+              {(stats?.totalWholesaleRevenue ?? 0) > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-emerald-400" /> Vendas atacado</span>
+                  <span className="text-emerald-400 font-medium">+{formatCurrency(stats?.totalWholesaleRevenue ?? 0)}</span>
+                </div>
+              )}
               {(stats?.totalExpenses ?? 0) > 0 && (
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500 flex items-center gap-1"><TrendingDown className="w-3 h-3 text-rose-400" /> Despesas</span>
