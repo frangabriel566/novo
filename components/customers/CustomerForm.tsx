@@ -95,6 +95,7 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
         value={form.phone}
         onChange={(e) => handleChange('phone', e.target.value)}
         placeholder="(86) 99999-9999"
+        required
       />
 
       <Input
@@ -104,10 +105,17 @@ export default function CustomerForm({ customer, onSuccess, onCancel }: Customer
         placeholder="Teresina"
       />
 
+      <Select
+        label="Tipo de cliente"
+        value={form.type}
+        onChange={(e) => handleChange('type', e.target.value)}
+        options={[{ value: 'RETAIL', label: 'Varejo' }, { value: 'WHOLESALE', label: 'Atacado' }]}
+      />
+
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-300">
           Data de nascimento
-          <span className="ml-1 text-xs text-gray-500">(dia/mês/ano — opcional)</span>
+          <span className="ml-1 text-xs text-gray-500">(dia/mês/ano)</span>
         </label>
         <input
           type="date"
