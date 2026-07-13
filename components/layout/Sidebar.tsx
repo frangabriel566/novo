@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   Crown, LayoutDashboard, Package, Users, ShoppingCart,
   LogOut, ChevronRight, BarChart3, DollarSign, Layers,
-  UserCog, Sun, Moon, X, Wallet, Cake,
+  UserCog, Sun, Moon, X, Cake,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
