@@ -70,6 +70,29 @@ export interface Sale {
   updatedAt: string
 }
 
+export interface WholesaleSaleItem {
+  id: string
+  quantity: number
+  price: number
+  wholesaleProductId: string
+  product: WholesaleProduct
+  wholesaleSaleId: string
+}
+
+export interface WholesaleSale {
+  id: string
+  total: number
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED'
+  notes: string | null
+  customerId: string
+  customer: Customer
+  userId: string
+  user: User
+  items: WholesaleSaleItem[]
+  createdAt: string
+  updatedAt: string
+}
+
 export interface DashboardStats {
   totalRevenue: number
   totalSales: number
