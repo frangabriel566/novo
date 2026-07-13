@@ -185,3 +185,8 @@ enum FiadoStatus {
   PENDING
   COMPLETED
 }
+
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+}
