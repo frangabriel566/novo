@@ -90,6 +90,52 @@ model SaleItem {
   @@map("sale_items")
 }
 
+model WholesaleProduct {
+  id                String              @id @default(cuid())
+  name              String
+  description       String?
+  price             Float
+  quantity          Int                 @default(0)
+  category          String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  costPrice         Float               @default(0)
+  lowStockThreshold Int                 @default(5)
+  saleItems         WholesaleSaleItem[]
+
+  @@map("wholesale_products")
+}
+
+model WholesaleSale {
+  id            String              @id @default(cuid())
+  total         Float
+  status        SaleStatus          @default(COMPLETED)
+  notes         String?
+  customerId    String
+  userId        String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  paymentMethod PaymentMethod       @default(CASH)
+  discount      Float               @default(0)
+  items         WholesaleSaleItem[]
+  customer      Customer            @relation(fields: [customerId], references: [id])
+  user          User                @relation(fields: [userId], references: [id])
+
+  @@map("wholesale_sales")
+}
+
+model WholesaleSaleItem {
+  id                 String           @id @default(cuid())
+  quantity           Int
+  price              Float
+  wholesaleProductId String
+  wholesaleSaleId    String
+  product            WholesaleProduct @relation(fields: [wholesaleProductId], references: [id])
+  sale               WholesaleSale    @relation(fields: [wholesaleSaleId], references: [id])
+
+  @@map("wholesale_sale_items")
+}
+
 model Expense {
   id          String   @id @default(cuid())
   description String
