@@ -51,7 +51,6 @@ async function getDashboardStats() {
         orderBy: { createdAt: 'asc' },
       }),
       prisma.expense.aggregate({ _sum: { amount: true } }),
-      prisma.fiado.aggregate({ where: { status: 'COMPLETED' }, _sum: { amount: true } }),
       prisma.setting.findUnique({ where: { key: 'saldo_ajuste' } }),
     ])
 
