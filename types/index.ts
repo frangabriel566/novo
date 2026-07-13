@@ -16,8 +16,19 @@ export interface Product {
   quantity: number
   lowStockThreshold: number
   category: string
-  wholesalePrice: number | null
-  wholesaleMinQty: number | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WholesaleProduct {
+  id: string
+  name: string
+  description: string | null
+  costPrice: number
+  price: number
+  quantity: number
+  lowStockThreshold: number
+  category: string
   createdAt: string
   updatedAt: string
 }
