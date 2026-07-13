@@ -96,6 +96,7 @@ export interface CustomerFormData {
   phone: string
   address: string
   birthDate?: string
+  type: 'RETAIL' | 'WHOLESALE'
 }
 
 export interface GoalSettings {
