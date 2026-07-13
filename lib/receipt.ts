@@ -1,10 +1,19 @@
-import { Sale } from '@/types'
 import { formatCurrency, formatDateTime, getStatusLabel } from './utils'
+
+interface ReceiptSale {
+  id: string
+  total: number
+  status: string
+  createdAt: string
+  customer: { name: string }
+  items: { id: string; quantity: number; price: number; product: { name: string } }[]
+}
 
 /**
  * Abre uma janela com um recibo simples e imprimível da venda.
+ * Funciona tanto para vendas de varejo quanto de atacado (mesmo formato de dados).
  */
-export function printSaleReceipt(sale: Sale) {
+export function printSaleReceipt(sale: ReceiptSale) {
   const win = window.open('', '_blank', 'width=380,height=600')
   if (!win) return
 
