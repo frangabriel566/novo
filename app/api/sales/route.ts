@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { getEffectivePrice } from '@/lib/pricing'
 import { z } from 'zod'
 
 const saleItemSchema = z.object({
