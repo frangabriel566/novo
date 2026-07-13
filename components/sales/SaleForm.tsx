@@ -8,6 +8,7 @@ import Select from '@/components/ui/Select'
 import Textarea from '@/components/ui/Textarea'
 import { Customer, Product, SaleItemInput } from '@/types'
 import { formatCurrency } from '@/lib/utils'
+import { getEffectivePrice } from '@/lib/pricing'
 import { useRouter } from 'next/navigation'
 
 const PAYMENT_OPTIONS = [
