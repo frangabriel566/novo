@@ -78,14 +78,16 @@ export async function POST(request: NextRequest) {
     const customer = await prisma.customer.findUnique({ where: { id: customerId } })
     if (!customer) return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
 
-    // Validate every submitted price against the product's real price in the DB.
-    // Without this, a tampered request could sell at any price the client chooses to send.
+    // Validate every submitted price against the product's real price in the DB
+    // (retail, or wholesale when the customer/quantity qualify). Without this, a
+    // tampered request could sell at any price the client chooses to send.
     const products = await prisma.product.findMany({ where: { id: { in: items.map(i => i.productId) } } })
     const productById = new Map(products.map(p => [p.id, p]))
     for (const item of items) {
       const product = productById.get(item.productId)
       if (!product) return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 })
-      if (Math.abs(item.price - product.price) > 0.001) {
+      const expectedPrice = getEffectivePrice(product, customer.type, item.quantity)
+      if (Math.abs(item.price - expectedPrice) > 0.001) {
         return NextResponse.json({ error: `Preço inválido para ${product.name}. Atualize a página e tente novamente.` }, { status: 400 })
       }
     }
